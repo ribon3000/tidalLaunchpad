@@ -48,7 +48,6 @@ if (typeof argv['input-port'] === 'undefined' || typeof argv['output-port'] === 
   console.error('Error: You must specify both --input-port and --output-port.');
   process.exit(1);
 }
-
 // File paths
 const tidalBootFile = './BootTidal.hs';
 const tidalCodeFile = './playback.hs';
@@ -59,9 +58,6 @@ tidal.start();
 
 const midiManager = new MIDIManager(argv['input-port'], argv['output-port']);
 const state = new StateManager(tidal, tidalCodeFile);
-
-// Access parsed sections from StateManager
-const sections = state.sections;
 
 // Helper constants
 const rowMapping = [0, 16, 32, 48, 64, 80, 96, 112]; // Launchpad rows
@@ -76,19 +72,17 @@ midiManager.addListener((message) => {
     const row = Math.floor(note / 16);
     const col = note % 16;
 
-    const currentSections = state.getSections(); // Query the current state
+    const currentSections = state.getSections();
     const sectionCode = currentSections[row + 1];
 
     if (!sectionCode) {
       console.log(`No section found for row ${row + 1}`);
-      return; // Skip processing
+      return;
     }
 
     if (col === 8) {
-      // Scene launch button
       tidal.sendCommand(`:{\n${sectionCode}\n:}`);
     } else {
-      // Individual button
       const streamIndex = col;
       const streams = state.parseStreams(sectionCode);
 
@@ -96,16 +90,13 @@ midiManager.addListener((message) => {
         const modifiedCode = state.modifySection(sectionCode, streams[streamIndex]);
         tidal.sendCommand(`:{\n${modifiedCode}\n:}`);
       } else {
-        // Mute the stream if the pad is empty
         tidal.sendCommand(`d${streamIndex + 1} $ "~"`);
       }
     }
 
-    // Update LEDs
     updateLEDs(row, sectionCode);
   }
 });
-
 
 // Update LEDs for a given row
 function updateLEDs(row, sectionCode) {
@@ -117,11 +108,24 @@ function updateLEDs(row, sectionCode) {
     midiManager.setLED(note, color);
   }
 
-  // Light up the scene launch button
   const sceneButton = rowMapping[row] + 8;
   midiManager.setLED(sceneButton, ledColors.on);
 }
 
+// Update LEDs for all sections
+function updateAllLEDs() {
+  const currentSections = state.getSections();
+  midiManager.clearLEDs();
+  Object.keys(currentSections).forEach((section, index) => {
+    updateLEDs(index, currentSections[section]);
+  });
+}
+
+// Listen for file changes
+state.on('fileChanged', () => {
+  console.log('File changed, updating LEDs...');
+  updateAllLEDs();
+});
+
 // Initial LED setup
-midiManager.clearLEDs();
-Object.keys(sections).forEach((section, index) => updateLEDs(index, sections[section]));
+updateAllLEDs();

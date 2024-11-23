@@ -32,6 +32,14 @@ do
 do
   hush
   d1 $ s "bd*8"
+  d3 $ s "bd/2" # n ("[60,67,75]" + (slow 4 "<0 5 -2 7>" - 24))
 
 -- section 5
 
+do
+  hush
+
+-- section 6
+
+do
+  hush
