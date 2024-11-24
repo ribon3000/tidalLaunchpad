@@ -1,17 +1,19 @@
-function parseStreams(sectionCode) {
-    const streamRegex = /\b(d\d+)\b/;
-    const lines = sectionCode.split('\n');
-    const streams = [];
+function parseStreams(code) {
+    const lines = code.split('\n');
+    const streams = {};
   
-    for (const line of lines) {
-      const match = line.match(streamRegex);
+    lines.forEach((line) => {
+      const match = line.match(/^\s*(d[1-8])\s*\$/);
       if (match) {
-        streams.push(match[1]);
+        const streamName = match[1];
+        streams[streamName] = line;
       }
-    }
+    });
   
     return streams;
   }
   
-  module.exports = { parseStreams };
+  module.exports = {
+    parseStreams,
+  };
   

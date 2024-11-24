@@ -34,6 +34,9 @@ do
   d1 $ s "bd*8" # amp 0.28
   d3 $ s "bd/2" # n ("[60,67,75]" + (slow 4 "<0 5 -2 7>" - 24))
   d2 $ s "sdkfjdk"
+  d5 $ s "sdfjdkfjkj"
+  d6 $ s "tete"
+  d7 $ s "sddk"
   d8 $ s "sdklfjdkj"
 
 -- section 5
