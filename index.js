@@ -66,33 +66,59 @@ const rowMapping = [0, 16, 32, 48, 64, 80, 96, 112]; // Launchpad rows
 const ledColors = { off: 0, on: 3 };
 
 
-// MIDI message handling
+// // MIDI message handling
+// midiManager.addListener((message) => {
+//   const [status, note, velocity] = message;
+//   const isButtonPress = status === 144 && velocity > 0; // Note On
+
+//   if (isButtonPress) {
+//     const row = Math.floor(note / 16);
+//     const col = note % 16;
+
+//     const sections = state.getSections();
+//     const sectionCode = sections[row + 1];
+
+//     if (!sectionCode) {
+//       console.log(`No section found for row ${row + 1}`);
+//       return;
+//     }
+
+//     if (col === 8) {
+//       tidal.sendCommand(`:{\n${sectionCode}\n:}`);
+//     } else {
+//       const streams = state.parseStreams(sectionCode);
+//       const activeStream = streams[col];
+//       if (activeStream) {
+//         handleStreamActivation(row, col, sectionCode, activeStream);
+//       } else {
+//         tidal.sendCommand(`d${col + 1} $ "~"`);
+//       }
+//     }
+//   }
+// });
+
+
 midiManager.addListener((message) => {
   const [status, note, velocity] = message;
-  const isButtonPress = status === 144 && velocity > 0; // Note On
+  const isButtonPress = status === 144 && velocity > 0;
 
   if (isButtonPress) {
     const row = Math.floor(note / 16);
     const col = note % 16;
 
-    const sections = state.getSections();
-    const sectionCode = sections[row + 1];
-
-    if (!sectionCode) {
-      console.log(`No section found for row ${row + 1}`);
-      return;
-    }
-
     if (col === 8) {
+      const sections = state.getSections();
+      const sectionCode = sections[row + 1];
       tidal.sendCommand(`:{\n${sectionCode}\n:}`);
-      ledManager.highlightModifiedRow(row);
     } else {
+      const sections = state.getSections();
+      const sectionCode = sections[row + 1];
       const streams = state.parseStreams(sectionCode);
-      const activeStream = streams[col];
-      if (activeStream) {
-        handleStreamActivation(row, col, sectionCode, activeStream);
-      } else {
-        tidal.sendCommand(`d${col + 1} $ "~"`);
+
+      if (streams[col]) {
+        ledManager.setActiveStream(row, col);
+        //state.clearModifiedStreams(row, col);
+        tidal.sendCommand(`:{\n${state.modifySection(sectionCode, streams[col])}\n:}`);
       }
     }
   }
@@ -105,7 +131,6 @@ function handleStreamActivation(row, col, sectionCode, activeStream) {
   ledManager.highlightActiveStream(row, col);
 }
 
-// Update LEDs on file change
 state.on('fileChanged', () => {
   console.log('File changed, updating LEDs...');
   ledManager.updateAllLEDs();

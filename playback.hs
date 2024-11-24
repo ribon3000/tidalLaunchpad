@@ -31,13 +31,17 @@ do
 
 do
   hush
-  d1 $ s "bd*8" # amp 1
+  d1 $ s "bd*8" # amp 0.28
   d3 $ s "bd/2" # n ("[60,67,75]" + (slow 4 "<0 5 -2 7>" - 24))
+  d2 $ s "sdkfjdk"
+  d8 $ s "sdklfjdkj"
 
 -- section 5
 
 do
   hush
+  d1 $ s "sdkfjhdk"
+  d2 $ s "meesdsp"
 
 -- section 6
 
