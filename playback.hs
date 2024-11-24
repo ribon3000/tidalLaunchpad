@@ -38,8 +38,9 @@ do
 
 do
   hush
-  d1 $ s "sdkfjhdk"
-  d2 $ s "mdeesdsp"
+  d1 $ s "skfhdk"
+  d2 $ s "miessp"
+  d5 $ s "sdfkdk"
 
 -- section 6
 

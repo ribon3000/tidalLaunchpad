@@ -11,6 +11,7 @@ class StateManager extends EventEmitter {
     this.sections = {};
     this.modifiedStreams = {};
     this.isFirstLoad = true;
+    this.activeStreams = Array(8).fill(null); // Track active streams per column
 
     this.fileWatcher = new FileWatcher(filePath);
     this.fileWatcher.on('fileChanged', (fileContent) => {
@@ -20,6 +21,27 @@ class StateManager extends EventEmitter {
 
     this.reloadFile(this.fileWatcher.readFile());
   }
+
+
+  setActiveStream(row, col) {
+    const previousActiveRow = this.activeStreams[col];
+    this.activeStreams[col] = row;
+
+    return previousActiveRow; // This allows us to deactivate the previously active LED
+  }
+
+  getActiveStreams() {
+    return this.activeStreams;
+  }
+
+  deactivateStream(col) {
+    this.activeStreams[col] = null;
+  }
+
+  getSections() {
+    return this.sections;
+  }
+
 
   reloadFile(fileContent) {
     const oldSections = this.sections;

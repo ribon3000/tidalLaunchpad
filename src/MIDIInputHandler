@@ -1,0 +1,60 @@
+class MIDIInputHandler {
+  constructor(midiManager, tidalManager, stateManager, ledManager) {
+    this.midiManager = midiManager;
+    this.tidalManager = tidalManager;
+    this.stateManager = stateManager;
+    this.ledManager = ledManager;
+
+    // Register the listener for MIDI messages
+    this.midiManager.addListener((message) => this.handleMessage(message));
+  }
+
+  handleMessage(message) {
+    const [status, note, velocity] = message;
+    const isButtonPress = status === 144 && velocity > 0;
+
+    if (isButtonPress) {
+      const row = Math.floor(note / 16);
+      const col = note % 16;
+
+      const sections = this.stateManager.getSections();
+      const sectionCode = sections[row + 1];
+
+      if (!sectionCode) {
+        console.log(`No section found for row ${row + 1}`);
+        return;
+      }
+
+      if (col === 8 && note === (this.ledManager.rowMapping[row] + 8)) {
+        // Scene launch button: play entire section and set scene active
+        console.log(`Launching scene for row ${row}`);
+        this.tidalManager.sendCommand(`:{\n${sectionCode}\n:}`);
+        this.stateManager.clearModifiedStreams(row);
+        this.ledManager.setSceneActive(row);
+      } else {
+        // Individual stream activation
+        const streams = this.stateManager.parseStreams(sectionCode);
+        const streamKey = `d${col + 1}`; // Match button (0-7) to streams d1-d8
+
+        if (streams[streamKey]) {
+          console.log(`Activating stream ${streamKey} in row ${row}`);
+
+          // Clear modified status for the activated stream first
+          this.stateManager.clearModifiedStreams(row, col);
+
+          // Activate the stream (this also updates the LEDs)
+          this.ledManager.setActiveStream(row, col);
+
+          // Send the command to Tidal
+          this.tidalManager.sendCommand(`:{\n${this.stateManager.modifySection(sectionCode, streamKey)}\n:}`);
+        } else {
+          console.log(`Muting stream ${streamKey}`);
+          this.tidalManager.sendCommand(`${streamKey} $ "~"`); // Mute stream
+          this.ledManager.deactivateStream(col); // Turn off the LED
+        }
+      }
+    }
+  }
+}
+
+module.exports = MIDIInputHandler;
