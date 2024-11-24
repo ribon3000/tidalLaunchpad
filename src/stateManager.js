@@ -1,6 +1,7 @@
 const fs = require('fs');
 const EventEmitter = require('events');
 const parseTidalFile = require('./tidalFileParser');
+const { parseStreams } = require('./utils');
 
 class StateManager extends EventEmitter {
   constructor(tidalManager, filePath) {
@@ -8,46 +9,49 @@ class StateManager extends EventEmitter {
     this.tidalManager = tidalManager;
     this.filePath = filePath;
     this.sections = {};
-    this.currentSection = null;
+    this.modifiedSections = new Set(); // Track modified sections
 
     this.reloadFile();
-
-    // Watch for file changes
     fs.watch(this.filePath, () => {
       console.log('File changed, reloading...');
       this.reloadFile();
-      this.emit('fileChanged', this.sections); // Emit event with updated sections
+      this.emit('fileChanged', this.sections);
     });
   }
 
   reloadFile() {
+    const oldSections = this.sections;
     this.sections = parseTidalFile(this.filePath);
+
+    // Determine which sections are new or changed
+    Object.keys(this.sections).forEach((key) => {
+      if (this.sections[key] !== oldSections[key]) {
+        this.modifiedSections.add(key);
+      }
+    });
   }
 
   getSections() {
     return this.sections;
   }
 
+  clearModifiedSections() {
+    this.modifiedSections.clear();
+  }
+
+  getModifiedSections() {
+    return Array.from(this.modifiedSections);
+  }
+
   parseStreams(sectionCode) {
-    const streamRegex = /\b(d\d+)\b/; // Matches d1, d2, ..., d8
-    const lines = sectionCode.split('\n');
-    const streams = [];
-
-    for (const line of lines) {
-      const match = line.match(streamRegex);
-      if (match) {
-        streams.push(match[1]);
-      }
-    }
-
-    return streams;
+    return parseStreams(sectionCode);
   }
 
   modifySection(sectionCode, activeStream) {
     const lines = sectionCode.split('\n');
     const streamRegex = /^\s*(d\d+)\s*\$/; // Matches lines starting with d1, d2, ..., d8
-    let isInActiveStream = false;
-    let isInOtherStream = false;
+    let isInActiveStream = false; // Tracks if we're inside the active stream
+    let isInOtherStream = false; // Tracks if we're inside another stream
 
     const modifiedLines = lines.map((line) => {
       if (line.trim().startsWith('hush')) {
@@ -60,23 +64,23 @@ class StateManager extends EventEmitter {
         if (currentStream === activeStream) {
           isInActiveStream = true;
           isInOtherStream = false;
-          return line;
+          return line; // Leave active stream line uncommented
         } else {
           isInActiveStream = false;
           isInOtherStream = true;
-          return `--${line}`;
+          return `--${line}`; // Comment out non-active streams
         }
       }
 
       if (isInActiveStream) {
-        return line;
+        return line; // Leave lines in the active stream uncommented
       }
 
       if (isInOtherStream) {
-        return `--${line}`;
+        return `--${line}`; // Comment out lines in other streams
       }
 
-      return line;
+      return line; // Leave unrelated lines untouched
     });
 
     return modifiedLines.join('\n');
