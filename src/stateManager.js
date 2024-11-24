@@ -1,8 +1,7 @@
-const fs = require('fs');
+// src/stateManager.js
 const EventEmitter = require('events');
-const parseTidalFile = require('./tidalFileParser');
-const { parseStreams } = require('./utils');
-const { start } = require('repl');
+const FileWatcher = require('./FileWatcher');
+const TidalParser = require('./TidalParser');
 
 class StateManager extends EventEmitter {
   constructor(tidalManager, filePath) {
@@ -10,23 +9,24 @@ class StateManager extends EventEmitter {
     this.tidalManager = tidalManager;
     this.filePath = filePath;
     this.sections = {};
-    this.modifiedStreams = {}; // Track modified streams by row
+    this.modifiedStreams = {};
     this.isFirstLoad = true;
 
-    this.reloadFile();
-    fs.watch(this.filePath, () => {
-      console.log('File changed, reloading...');
-      this.reloadFile();
+    this.fileWatcher = new FileWatcher(filePath);
+    this.fileWatcher.on('fileChanged', (fileContent) => {
+      this.reloadFile(fileContent);
       this.emit('fileChanged', this.sections);
     });
+
+    this.reloadFile(this.fileWatcher.readFile());
   }
 
-  reloadFile() {
+  reloadFile(fileContent) {
     const oldSections = this.sections;
-    this.sections = parseTidalFile(this.filePath);
+    this.sections = TidalParser.parseSections(fileContent);
   
     if (this.isFirstLoad) {
-      this.modifiedStreams = {}; // Clear modifications on first load
+      this.modifiedStreams = {};
       this.isFirstLoad = false;
       return;
     }
@@ -35,17 +35,16 @@ class StateManager extends EventEmitter {
       return; // No changes detected
     }
   
-    // Iterate over all sections to update modifiedStreams
     Object.keys(this.sections).forEach((key) => {
       const oldCode = oldSections[key] || '';
       const newCode = this.sections[key] || '';
   
       if (oldCode !== newCode) {
         const row = parseInt(key, 10) - 1;
-        const modifiedInCurrentSection = this.parseModifiedStreams(oldCode, newCode);
+        const modifiedInCurrentSection = TidalParser.parseModifiedStreams(oldCode, newCode);
   
         if (!this.modifiedStreams[row]) {
-          this.modifiedStreams[row] = new Set(); // Use Set to avoid duplicates
+          this.modifiedStreams[row] = new Set();
         }
   
         modifiedInCurrentSection.forEach((streamIndex) => {
@@ -56,60 +55,7 @@ class StateManager extends EventEmitter {
   }
 
   parseStreams(code) {
-    return parseStreams(code);
-  }
-
-  parseModifiedStreams(oldCode, newCode) {
-    // Function to remove comments and blank lines
-    const removeCommentsAndBlanks = (lines) => {
-      return lines.filter(line => !/^\s*--/.test(line) && line.trim() !== '');
-    };
-  
-    // Split code into lines and remove comments/blanks
-    const oldLines = removeCommentsAndBlanks(oldCode.split('\n'));
-    const newLines = removeCommentsAndBlanks(newCode.split('\n'));
-  
-    const oldStreams = this.parseStreams(oldCode);
-    const newStreams = this.parseStreams(newCode);
-  
-    const modified = [];
-    let nonStreamChange = false;
-  
-    // Compare the lines to determine modifications
-    for (let i = 0; i < Math.max(oldLines.length, newLines.length); i++) {
-      const oldLine = oldLines[i] || '';
-      const newLine = newLines[i] || '';
-  
-      if (oldLine !== newLine) {
-        // Check if the line belongs to a stream
-        const streamMatch = newLine.match(/^\s*(d[1-8])\s*\$/);
-        if (streamMatch) {
-          const streamKey = streamMatch[1];
-          // If the stream has changed, add it to the modified list
-          const streamIndex = parseInt(streamKey.slice(1), 10) - 1;
-          modified.push(streamIndex);
-        } else {
-          // If non-stream code has changed, mark entire section as modified
-          nonStreamChange = true;
-        }
-      }
-    }
-  
-    // If non-stream changes are detected, mark all streams as modified
-    if (nonStreamChange) {
-      return [...Array(8).keys()]; // Mark all streams as modified
-    }
-  
-    return modified;
-  }
-  
-  
-  
-  hasNonStreamChanges(oldCode, newCode) {
-    const streamRegex = /^\s*(d\d+)\s*\$/gm;
-    const oldNonStreamCode = oldCode.replace(streamRegex, '');
-    const newNonStreamCode = newCode.replace(streamRegex, '');
-    return oldNonStreamCode !== newNonStreamCode;
+    return TidalParser.parseStreams(code);
   }
 
   getModifiedStreams(row) {
@@ -150,23 +96,23 @@ class StateManager extends EventEmitter {
         if (currentStream === activeStream) {
           isInActiveStream = true;
           isInOtherStream = false;
-          return line; // Leave active stream line uncommented
+          return line;
         } else {
           isInActiveStream = false;
           isInOtherStream = true;
-          return `--${line}`; // Comment out non-active streams
+          return `--${line}`;
         }
       }
 
       if (isInActiveStream) {
-        return line; // Leave lines in the active stream uncommented
+        return line;
       }
 
       if (isInOtherStream) {
-        return `--${line}`; // Comment out lines in other streams
+        return `--${line}`;
       }
 
-      return line; // Leave unrelated lines untouched
+      return line;
     });
 
     return modifiedLines.join('\n');
