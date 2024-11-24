@@ -21,7 +21,7 @@ do
               sometimesBy 0.0 (ply (irand 4)) $ outside 2 (degradeBy 0.3) 
               $ inside 8 palindrome $ fast 2 $ every "<2!8 4!8>" (rev) $ "t(3,8)"
     d1 $ stack [
-              struct pat $ s "bd" # n "<30!3 <50 20>>" # legato 1.5 # amp "0.5 1",
+              struct pat $ s "bd" # n "<30!3 <50 20>>" # legato 1.5 # amp "0.5 1 0.8",
               struct (inv pat) $ s "bd" # n "37" # legato 0.5 # amp "1 0.5" # val4 "0.5 0.1 1" # val1 "<0.1 0.3 0.8>" # val2 "0.5 <0.0 0.9 0.1 0.5 -0.44> 1.0" # val3 (segment 32 rand)
               ]
     d2 $ every 8 (struct pat) $ s "bd*4" # n "36" # amp 1 # velocity 127
@@ -33,11 +33,6 @@ do
   hush
   d1 $ s "bd*8" # amp 0.28
   d3 $ s "bd/2" # n ("[60,67,75]" + (slow 4 "<0 5 -2 7>" - 24))
-  d2 $ s "sdkfjdk"
-  d5 $ s "sdfjdkfjkj"
-  d6 $ s "tete"
-  d7 $ s "sddk"
-  d8 $ s "sdklfjdkj"
 
 -- section 5
 
@@ -50,3 +45,11 @@ do
 
 do
   hush
+
+-- section 7
+
+do
+  hush
+  d1 $ s "bd"
+  d2 $ s "hsÜ3"
+  d8 $ s "sdlfdjk"
