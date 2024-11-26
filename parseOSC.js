@@ -1,5 +1,7 @@
-var buf = new Buffer("---buffy")
+var notesBuffer = new Buffer("---notes")
+var modsBuffer = new Buffer("---modulations")
 var id = "1";
+var max_poly = 8;
 
 function anything()
 {
@@ -18,43 +20,56 @@ function anything()
 		return;
 	}
 	
-	
-	//trig
-	var onset = args.cycle % 1;
-	var pos = Math.floor(onset*buf.framecount());
-	buf.poke(1,pos,1);
-	
-	//pitch
-	
-	var pitch = 60;
-	if(args.hasOwnProperty('n')){
-		pitch = args.n;
-	};
-	buf.poke(2,pos,pitch);
-	
-	//duration
-	var dur = (args.cps * args.delta) * 1000;
-	if(args.hasOwnProperty('legato')){
-		dur = dur * args.legato;
-	};
-	buf.poke(3,pos,dur);
-	
-	//velocity/amp
-	var velocity = 100;
-	if(args.hasOwnProperty('velocity')){
-		velocity = args.velocity;
-	};
-	if(args.hasOwnProperty('amp')){
-		velocity *= args.amp;
-	};
-	buf.poke(4,pos,velocity);
-	
+	for(var i=0;i<max_poly;i++){
+		var bufferOffset = i*4;
+		
+		if(notesBuffer.peek(1+bufferOffset,pos) == 1){
+			continue
+		}
+
+		//trig
+		var onset = args.cycle % 1;
+		var pos = Math.floor(onset*notesBuffer.framecount());
+		notesBuffer.poke(1+bufferOffset,pos,1);
+		
+		//pitch
+		
+		var pitch = 60;
+		if(args.hasOwnProperty('n')){
+			pitch = args.n;
+		};
+		notesBuffer.poke(2+bufferOffset,pos,pitch);
+		
+		//duration
+		var dur = (args.cps * args.delta) * 1000;
+		if(args.hasOwnProperty('legato')){
+			dur = dur * args.legato;
+		};
+		notesBuffer.poke(3+bufferOffset,pos,dur);
+		
+		//velocity/amp
+		var velocity = 100;
+		if(args.hasOwnProperty('velocity')){
+			velocity = args.velocity;
+		};
+		if(args.hasOwnProperty('amp')){
+			velocity *= args.amp;
+		};
+		notesBuffer.poke(4+bufferOffset,pos,velocity);
+		
+		break
+	}
 	//mappable values 1-4
 	var val_keys = ['val1','val2','val3','val4'];
 	
 	for(var i=0;i<val_keys.length;i++){
 		if(args.hasOwnProperty(val_keys[i])){
-			buf.poke(5+i,pos,args[val_keys[i]])
+			var samps = new Array(2)
+			for (var j = 0; j < samps.length; j++) {
+				samps[j] = args[val_keys[i]];
+			}			
+			//outlet(0,"set val to to: "+args[val_keys[i]]);
+			modsBuffer.poke(5+i,pos,samps)
 		}
 	}
 
