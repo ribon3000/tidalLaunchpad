@@ -23,13 +23,14 @@ function anything()
 	for(var i=0;i<max_poly;i++){
 		var bufferOffset = i*4;
 		
-		if(notesBuffer.peek(1+bufferOffset,pos) == 1){
-			continue
-		}
-
+		
 		//trig
 		var onset = args.cycle % 1;
 		var pos = Math.floor(onset*notesBuffer.framecount());
+		if(notesBuffer.peek(1+bufferOffset,pos) == 1){
+			//if there's already an event here switch 4 buffers upwards
+			continue
+		}
 		notesBuffer.poke(1+bufferOffset,pos,1);
 		
 		//pitch
