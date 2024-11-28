@@ -229,13 +229,13 @@ class StateManager extends EventEmitter {
     return finalLines.join('\n').trim();
 }
 
-
   writeSectionToFile(sectionKey, updatedSectionCode) {
-    // Update the internal sections object
-    this.sections[sectionKey] = updatedSectionCode;
+    // Create a copy of the sections
+    const updatedSections = { ...this.sections };
+    updatedSections[sectionKey] = updatedSectionCode;
 
     // Write the updated sections back to the file
-    this.fileWatcher.writeFile(this.sections);
+    this.fileWatcher.writeFile(updatedSections);
   }
 
   activateStream(row, col, streamKey, sectionCode) {

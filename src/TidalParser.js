@@ -67,7 +67,7 @@ class TidalParser {
             modified.push(streamIndex);
           } else {
             // If non-stream code has changed, mark entire section as modified
-            nonStreamChange = true;
+            //nonStreamChange = true; //commenting out because it's currently not working correctly
           }
         }
       }
