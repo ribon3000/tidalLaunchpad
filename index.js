@@ -1,10 +1,10 @@
 const CLIManager = require('./src/CLIManager');
 const MIDIManager = require('./src/MIDIManager');
-const TidalManager = require('./src/TidalManager');
-const StateManager = require('./src/StateManager');
+const TidalManager = require('./src/tidalManager');
+const StateManager = require('./src/stateManager');
 const LEDManager = require('./src/LEDManager');
 const RhythmPatternGenerator = require('./src/TidalCodeGen/rhythmPatternGenerator')
-const MIDIInputHandler = require('./src/MIDIInputHandler');
+const MIDIInputHandler = require('./src/MIDIInputHandler.js');
 
 // Initialize CLI Manager and parse arguments
 const cli = new CLIManager();

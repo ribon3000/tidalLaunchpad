@@ -45,22 +45,29 @@ class MIDIInputHandler {
 
   handleGridButtonPress(row, col) {
     const sections = this.stateManager.getSections();
-    const sectionCode = sections[row + 1];
+    const sectionKey = row + 1;
+    const sectionCode = sections[sectionKey];
     
     if (!sectionCode) {
-      console.log(`No section found for row ${row + 1}`);
+      console.log(`No section found for row ${row + 1}, muting...`);
+      this.stateManager.deactivateStream(col);
       return;
     }
 
-    // Existing behavior for scene or individual stream activation
     if (col === 8) {
-      // Scene launch button: play entire section and set scene active
-      console.log(`Launching scene for row ${row}`);
+      // Scene launch button
       this.stateManager.launchScene(row);
     } else {
-      // Individual stream activation
       const streamKey = `d${col + 1}`;
-      this.stateManager.activateStream(row, col, streamKey, sectionCode);
+      const streams = this.stateManager.parseStreams(sectionCode);
+
+      if (streams.hasOwnProperty(streamKey)) {
+        // Activate stream
+        this.stateManager.activateStream(row, col, streamKey, sectionCode);
+      } else {
+        // Mute stream
+        this.stateManager.deactivateStream(col);
+      }
     }
   }
 

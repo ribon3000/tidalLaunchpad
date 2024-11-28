@@ -36,9 +36,12 @@ class LEDManager {
   updateAllLEDs() {
     const sections = this.stateManager.getSections();
     this.midiManager.clearLEDs();
-    Object.keys(sections).forEach((sectionKey, index) => {
-      const sectionCode = sections[sectionKey];
-      this.updateRowLEDs(index, sectionCode);
+    Object.keys(sections).forEach((sectionKey) => {
+      const row = parseInt(sectionKey, 10) - 1;
+      if (row >= 0 && row < 8) {
+        const sectionCode = sections[sectionKey];
+        this.updateRowLEDs(row, sectionCode);
+      }
     });
   }
 

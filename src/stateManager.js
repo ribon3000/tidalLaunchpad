@@ -212,6 +212,16 @@ class StateManager extends EventEmitter {
     // Step 5: Notify LEDManager to update LEDs for the row
     this.emit('streamActivated', { row, col, previousActiveRow });
   }
+
+  deactivateStream(col) {
+    const streamNumber = col + 1;
+    const muteCommand = `d${streamNumber} $ "~"`;
+    this.tidalManager.sendCommand(muteCommand);
+
+    // Emit an event if necessary
+    this.emit('streamDeactivated', { col });
+  }
+
 }
 
 module.exports = StateManager;

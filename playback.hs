@@ -1,16 +1,28 @@
 -- section 1
 do
   hush
-  d1 $ "bd sd"
-
+  --correct output:
+  d1 $  outside 8 loopFirst $ sew "1!5 0@4" 
+      (stack [s "{~ ~ ~ ~ t ~ ~ ~}%16" # amp 0.27135112508044895, s "{~ ~ t ~ ~ ~ ~}%16"]) 
+      (stack [s "{~ ~ ~ ~ ~ ~ t}%16" # amp 0.3431143217358188, s "{~ t ~ ~}%16"]) # n 36
+  --incorrect output after generating stream 2 in section 1 twice
+  d2 $  outside 2 loopFirst $ sew "0!3 0@2" 
+      (stack [s "{t ~}%16" # amp 0.3469133360679407, s "{~ ~ t}%16"]) 
+      (stack [s "{~ ~ t ~}%16" # amp 0.5878715245463784, s "{~ t ~ ~}%16"]) # n 36
+      
+      (stack [s "{t ~ ~}%16" # amp 0.2419825785423253, s "{~ ~ t ~ ~}%16"]) 
+      (stack [s "{~ ~ t ~}%16" # amp 0.6245477388295997, s "{t ~}%16"]) # n 36
+  --correct output:
+  d4 $  outside 2 loopFirst $ sew "1!5 1@3" 
+      (stack [s "{~ t ~ ~}%16" # amp 0.27557091058272376, s "{~ t ~ ~ ~ ~ ~}%16"]) 
+      (stack [s "{~ t}%16" # amp 0.4990334847258771, s "{~ t}%16"]) # n 36
+      
 -- section 2
 do
   hush
   let val1 = pF "val1"
       val2 = pF "val2"
-  d1 $ "bd(3,8)"
-  d2 $ stack [ -- streams are still monophonic in max, which could actually be cool for breakbeats
-              -- later lines overwrite preceding ones of events fall into the same place
+  d2 $ stack [
               distrib ["9",16,"3 7"] $ s "hdh" # n "36",
               n "46(3,8)" # s "hvh",
               n "39(2,4,1)" # s "hhd",
@@ -19,6 +31,7 @@ do
               ]
   d3 $ s "sdklfjd" # n ("[55,62,69,76,83]" + "<0 0 2 5>")
   d4 $ outside 8 (loopFirst) $ fast 1 $ struct ("t({11 11 9 5 7}%16,16,{0 0 -1}%8)") $ s "sdfhk" # n (43 + "{0 0 0 12 0 -12 0}%16" + "0 5 -2 7") # legato "{1 0.2 2 1 1 3 0.5}%16" # amp "{0.2 0.2 1 0.2 0.2}%4" # val1 "{0 1 0 0.25 0.5}%8" # val2 (segment 16 $ rand)
+
 -- section 3
 
 do
@@ -50,10 +63,11 @@ do
 
 do
   hush
-  d1 $ s "sdfshssdddk"
-  d2 $ s "miessde"
-  d5 $ s "sdkesd"
 
+  d2 $  outside 6 loopFirst $ sew "0!4 1@5" 
+      (stack [s "{~ ~ ~ ~ t ~ ~ ~}%16" # amp 0.22225661084906087, s "{t ~ ~ ~ ~ ~}%16"]) 
+      (stack [s "{~ t ~}%16" # amp 0.34400728497041316, s "{~ ~ t}%16"]) # n 36
+      
 -- section 6
 
 do
@@ -62,25 +76,22 @@ do
       (stack [s "{~ t ~}%16" # amp 0.2964203797128332, s "{~ t ~}%16"]) 
       (stack [s "{~ t ~}%16" # amp 0.32098527040836256, s "{~ t}%16"]) # n 36
       
+
 -- section 7
 
 do
   hush
-  d1 $ s "bddfd"
-  d2 $ s "hs"
-  d8 $ s "sdlfdjk"
 
-
-
-
-
-
-
-
-
-
-
-
+  d2 $  outside 2 loopFirst $ sew "1!3 0@5" 
+      (stack [s "{~ ~ ~ t ~}%16" # amp 0.4849015719889291, s "{~ ~ ~ t ~ ~ ~ ~}%16"]) 
+      (stack [s "{~ ~ ~ t}%16" # amp 0.5135587075762597, s "{~ ~ ~ ~ t ~}%16"]) # n 36
+      
+-- section 8
+do
+  hush
+  d2 $  outside 8 loopFirst $ sew "0!3 1!5" 
+      (stack [s "{~!3 t}%16" # amp 0.2139064539437661, s "{t ~ ~ ~}%16"]) 
+      (stack [s "{~ t}%16" # amp 0.3274676119722802, s "{~ ~ t ~}%16"]) # n 36
 
 
 

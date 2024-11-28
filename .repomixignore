@@ -8,6 +8,7 @@ node_modules/*
 .gitignore
 *repomix*
 package.json
+BootTidal*
 package-lock.json
 parseOSC.js
 src/TidalCodeGen/RhythmicPatternGenerator.js
