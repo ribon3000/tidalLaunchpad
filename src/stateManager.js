@@ -96,7 +96,7 @@ class StateManager extends EventEmitter {
       }
     }
   }
-
+  
   getSections() {
     return this.sections;
   }
@@ -140,6 +140,7 @@ class StateManager extends EventEmitter {
     return modifiedLines.join('\n');
   }
 
+
   launchScene(row) {
     const sectionKey = row + 1;
     const sectionCode = this.sections[sectionKey];
@@ -153,6 +154,9 @@ class StateManager extends EventEmitter {
   
     // Update active streams
     const streams = TidalParser.parseStreams(sectionCode);
+    const previousActiveStreams = [...this.activeStreams]; // Copy of previous active streams
+    // Reset activeStreams and set the streams from the current scene
+    this.activeStreams = Array(8).fill(null);
     Object.keys(streams).forEach((streamKey) => {
       const streamIndex = parseInt(streamKey.slice(1), 10) - 1;
       this.activeStreams[streamIndex] = row;
@@ -161,8 +165,12 @@ class StateManager extends EventEmitter {
     // Clear modified streams for this row
     this.clearModifiedStreams(row);
   
-    // Emit an event if needed
-    this.emit('sceneLaunched', { row });
+    // Emit an event with the row and the active streams
+    this.emit('sceneLaunched', {
+      row,
+      activeStreams: this.activeStreams,
+      previousActiveStreams,
+    });
   }
 
 
@@ -241,28 +249,33 @@ class StateManager extends EventEmitter {
   activateStream(row, col, streamKey, sectionCode) {
     // Step 1: Set the active stream
     const previousActiveRow = this.setActiveStream(row, col);
-
+  
     // Step 2: Modify the section to activate only the desired stream
     const modifiedCode = this.modifySection(sectionCode, streamKey);
-
+  
     // Step 3: Send the command to TidalManager to activate the stream
     this.tidalManager.sendCommand(`:{\n${modifiedCode}\n:}`);
-
+  
     // Step 4: Clear the modified status for the activated stream
-    this.clearModifiedStreams(row, col);
-
-    // Step 5: Notify LEDManager to update LEDs for the row
+    this.clearModifiedStreams(row, col); // 'col' is the stream index
+  
+    // Step 5: Notify that the stream has been activated
     this.emit('streamActivated', { row, col, previousActiveRow });
   }
 
-  deactivateStream(col) {
-    const streamNumber = col + 1;
-    const muteCommand = `d${streamNumber} $ "~"`;
-    this.tidalManager.sendCommand(muteCommand);
 
-    // Emit an event if necessary
-    this.emit('streamDeactivated', { col });
-  }
+deactivateStream(col) {
+  const previousActiveRow = this.activeStreams[col];
+  this.activeStreams[col] = null;
+
+  // Send the mute command to TidalCycles
+  const streamNumber = col + 1;
+  const muteCommand = `d${streamNumber} $ silence`;
+  this.tidalManager.sendCommand(muteCommand);
+
+  // Emit an event to update LEDs
+  this.emit('streamDeactivated', { col, previousActiveRow });
+}
 
 }
 

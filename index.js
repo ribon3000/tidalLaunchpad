@@ -34,3 +34,27 @@ state.on('fileChanged', () => {
   console.log('File changed, updating LEDs...');
   ledManager.updateAllLEDs();
 });
+state.on('streamActivated', ({ row, col, previousActiveRow }) => {
+  // Update LEDs for the newly activated stream
+  ledManager.setActiveStream(row, col);
+
+  // Update LEDs for the previously active row if different
+  if (previousActiveRow !== null && previousActiveRow !== row) {
+    const sections = state.getSections();
+    const sectionCode = sections[previousActiveRow + 1];
+    ledManager.updateRowLEDs(previousActiveRow, sectionCode);
+  }
+});
+
+state.on('streamDeactivated', ({ col, previousActiveRow }) => {
+  // Update LEDs for the row where the stream was deactivated
+  if (previousActiveRow !== null) {
+    const sections = state.getSections();
+    const sectionCode = sections[previousActiveRow + 1];
+    ledManager.updateRowLEDs(previousActiveRow, sectionCode);
+  }
+});
+
+state.on('sceneLaunched', ({ row, activeStreams, previousActiveStreams }) => {
+  ledManager.handleSceneLaunched(row, activeStreams, previousActiveStreams);
+});

@@ -8,30 +8,32 @@ class LEDManager {
     this.ledColors = { off: 0, on: 3, active: 35, modified: 60 };
   }
 
+
   updateRowLEDs(row, sectionCode) {
     const streams = this.stateManager.parseStreams(sectionCode);
     const modifiedStreams = this.stateManager.getModifiedStreams(row);
     const activeStreams = this.stateManager.getActiveStreams();
-
+  
     for (let col = 0; col < 8; col++) {
       const note = this.rowMapping[row] + col;
       let color;
-
+  
       if (streams.hasOwnProperty(`d${col + 1}`)) {
-        if (modifiedStreams.includes(col)) {
-          color = this.ledColors.modified; // Highlight modified stream
-        } else if (activeStreams[col] === row) {
-          color = this.ledColors.active; // Highlight active stream
+        if (activeStreams[col] === row) {
+          color = this.ledColors.active; // Active (orange)
+        } else if (modifiedStreams.includes(col)) {
+          color = this.ledColors.modified; // Modified (green)
         } else {
-          color = this.ledColors.on; // Default color for an unmodified, available stream
+          color = this.ledColors.on; // Default color (red)
         }
       } else {
-        color = this.ledColors.off; // No stream available at this button position
+        color = this.ledColors.off; // Off
       }
-
+  
       this.midiManager.setLED(note, color);
     }
   }
+  
 
   updateAllLEDs() {
     const sections = this.stateManager.getSections();
@@ -96,6 +98,19 @@ class LEDManager {
     // Update LEDs for the active row
     const sectionCode = sections[row + 1];
     this.updateRowLEDs(row, sectionCode);
+  }
+
+
+  handleSceneLaunched(row, activeStreams, previousActiveStreams) {
+    const sections = this.stateManager.getSections();
+  
+    // Update LEDs for all rows
+    for (let r = 0; r < 8; r++) {
+      const sectionCode = sections[r + 1];
+      if (sectionCode) {
+        this.updateRowLEDs(r, sectionCode);
+      }
+    }
   }
 }
 
