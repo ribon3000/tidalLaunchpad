@@ -140,6 +140,31 @@ class StateManager extends EventEmitter {
     return modifiedLines.join('\n');
   }
 
+  launchScene(row) {
+    const sectionKey = row + 1;
+    const sectionCode = this.sections[sectionKey];
+    if (!sectionCode) {
+      console.log(`No section found for row ${sectionKey}`);
+      return;
+    }
+  
+    // Send the entire section code to TidalCycles
+    this.tidalManager.sendCommand(`:{\n${sectionCode}\n:}`);
+  
+    // Update active streams
+    const streams = TidalParser.parseStreams(sectionCode);
+    Object.keys(streams).forEach((streamKey) => {
+      const streamIndex = parseInt(streamKey.slice(1), 10) - 1;
+      this.activeStreams[streamIndex] = row;
+    });
+  
+    // Clear modified streams for this row
+    this.clearModifiedStreams(row);
+  
+    // Emit an event if needed
+    this.emit('sceneLaunched', { row });
+  }
+
 
   updateStreamInSection(sectionCode, streamKey, newPattern) {
     // Replace or add the stream in the given section

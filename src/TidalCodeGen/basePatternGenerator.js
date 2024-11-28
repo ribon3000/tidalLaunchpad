@@ -17,6 +17,17 @@ class BasePatternGenerator {
     getRandomFloat(min, max) {
         return Math.random() * (max - min) + min;
     }
+
+    weightedRandom(options) {
+      const totalWeight = options.reduce((sum, { weight }) => sum + weight, 0);
+      let randomNum = Math.random() * totalWeight;
+      for (const option of options) {
+        if (randomNum < option.weight) {
+          return option.value;
+        }
+        randomNum -= option.weight;
+      }
+    }
   }
   
 module.exports = BasePatternGenerator

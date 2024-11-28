@@ -58,11 +58,6 @@ class RhythmPatternGenerator extends BasePatternGenerator {
       const sewPattern = `${this.pickRandom(['0', '1'])}!${this.getRandomInt(2, 5)} ${this.pickRandom(['0', '1'])}@${this.getRandomInt(2, 5)}`;
       return sewPattern;
     }
-  
-    // Utility function to generate a random float between min and max
-    getRandomFloat(min, max) {
-      return Math.random() * (max - min) + min;
-    }
   }
 
 module.exports = RhythmPatternGenerator;

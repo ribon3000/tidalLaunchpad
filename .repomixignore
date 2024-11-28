@@ -1,0 +1,13 @@
+# Add patterns to ignore here, one per line
+# Example:
+# *.log
+# tmp/
+node_modules/*
+*.maxpat
+*.amxd
+.gitignore
+*repomix*
+package.json
+package-lock.json
+parseOSC.js
+src/TidalCodeGen/RhythmicPatternGenerator.js
