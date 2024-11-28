@@ -34,8 +34,10 @@ do
               struct pat $ s "bd" # n "<30!3 <50 20>>" # legato 1.5 # amp "0.5 1 0.8",
               struct (inv pat) $ s "bd" # n "37" # legato 0.5 # amp "1 0.5" # val4 "0.5 0.1 1" # val1 "<0.1 0.3 0.8>" # val2 "0.5 <0.0 0.9 0.1 0.5 -0.44> 1.0" # val3 (segment 32 rand)
               ]
-    d2 $ every 8 (struct pat) $ s "bd*4" # n "36" # amp 1 # velocity 127
+    d2 $ every 0 (struct pat) $ s "bd*4" # n "36" # amp 1 # velocity 127
     d3 $ s "bd/4" # n ("[60,67,75]" + (slow 4 "<0 5 -2 7>" - 12))
+    d4 $ fast 4 $ degradeBy 0.2 $ bite 8 (slow 2 $ (markovPat 8 1 [[3,5,2,1], [4,4,2,1], [0,1,0,1],[3,2,2,0]]) + "<0 1>") $ s "sdhjh(7,8,<0 -4>)" # n (30 + ((run 8) * 5)) # amp "{0.4 2 0.3}%8" # legato "{0.2 1 0.3 2 1 1}%8" # val1 (rand) # val2 (1 <~ rand)
+  
     
 -- section 4
 
