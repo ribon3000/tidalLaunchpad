@@ -1,60 +1,91 @@
 class MIDIInputHandler {
-  constructor(midiManager, tidalManager, stateManager, ledManager) {
+  constructor(midiManager, stateManager, ledManager, patternGenerator) {
     this.midiManager = midiManager;
-    this.tidalManager = tidalManager;
     this.stateManager = stateManager;
     this.ledManager = ledManager;
+    this.patternGenerator = patternGenerator;
 
-    // Register the listener for MIDI messages
-    this.midiManager.addListener((message) => this.handleMessage(message));
+    this.generateModeActive = false;
+
+    midiManager.addListener(this.handleMessage.bind(this));
   }
 
   handleMessage(message) {
-    const [status, note, velocity] = message;
-    const isButtonPress = status === 144 && velocity > 0;
+    const [status, key, velocity] = message;
 
-    if (isButtonPress) {
-      const row = Math.floor(note / 16);
-      const col = note % 16;
-
-      const sections = this.stateManager.getSections();
-      const sectionCode = sections[row + 1];
-
-      if (!sectionCode) {
-        console.log(`No section found for row ${row + 1}`);
-        return;
-      }
-
-      if (col === 8 && note === (this.ledManager.rowMapping[row] + 8)) {
-        // Scene launch button: play entire section and set scene active
-        console.log(`Launching scene for row ${row}`);
-        this.tidalManager.sendCommand(`:{\n${sectionCode}\n:}`);
-        this.stateManager.clearModifiedStreams(row);
-        this.ledManager.setSceneActive(row);
+    // Handle Automap button press (Generate Button)
+    if (status === 176 && key >= 104 && key <= 111) {
+      if (velocity > 0) {
+        // Set generate mode active when Automap button is pressed
+        console.log(`Generate button pressed: ${key}`);
+        this.generateModeActive = true;
       } else {
-        // Individual stream activation
-        const streams = this.stateManager.parseStreams(sectionCode);
-        const streamKey = `d${col + 1}`; // Match button (0-7) to streams d1-d8
+        // Deactivate generate mode when button is released
+        console.log(`Generate button released: ${key}`);
+        this.generateModeActive = false;
+      }
+    }
 
-        if (streams[streamKey]) {
-          console.log(`Activating stream ${streamKey} in row ${row}`);
+    // Handle Stream Button Press (Grid Button)
+    if (status === 144 && velocity > 0) {
+      const row = Math.floor(key / 16);
+      const col = key % 16;
 
-          // Clear modified status for the activated stream first
-          this.stateManager.clearModifiedStreams(row, col);
+      console.log(`Grid button pressed: row ${row}, col ${col}`);
 
-          // Activate the stream (this also updates the LEDs)
-          this.ledManager.setActiveStream(row, col);
-
-          // Send the command to Tidal
-          this.tidalManager.sendCommand(`:{\n${this.stateManager.modifySection(sectionCode, streamKey)}\n:}`);
-        } else {
-          console.log(`Muting stream ${streamKey}`);
-          this.tidalManager.sendCommand(`${streamKey} $ "~"`); // Mute stream
-          this.ledManager.deactivateStream(col); // Turn off the LED
-        }
+      if (this.generateModeActive) {
+        console.log(`Generating pattern for stream d${col + 1} in row ${row}`);
+        this.generatePattern(row, col);
+      } else {
+        // Regular grid button handling
+        this.handleGridButtonPress(row, col);
       }
     }
   }
+
+  handleGridButtonPress(row, col) {
+    const sections = this.stateManager.getSections();
+    const sectionCode = sections[row + 1];
+    
+    if (!sectionCode) {
+      console.log(`No section found for row ${row + 1}`);
+      return;
+    }
+
+    // Existing behavior for scene or individual stream activation
+    if (col === 8) {
+      // Scene launch button: play entire section and set scene active
+      console.log(`Launching scene for row ${row}`);
+      this.stateManager.launchScene(row);
+    } else {
+      // Individual stream activation
+      const streamKey = `d${col + 1}`;
+      this.stateManager.activateStream(row, col, streamKey, sectionCode);
+    }
+  }
+
+  generatePattern(row, col) {
+    // Use the RhythmPatternGenerator to generate a new pattern
+    const streamNumber = col + 1; // Match col (0-7) to d1-d8
+    const generatedPattern = this.patternGenerator.generatePattern(streamNumber);
+
+    // Get the current sections and replace the code for the specific stream
+    const sections = this.stateManager.getSections();
+    const sectionKey = row + 1; // Section key is 1-based row index
+    if (!sections[sectionKey]) {
+      console.log(`No section found for row ${sectionKey}`);
+      return;
+    }
+
+    // Update the section with the generated pattern
+    const updatedSectionCode = this.stateManager.updateStreamInSection(sections[sectionKey], `d${streamNumber}`, generatedPattern);
+
+    // Write the updated section to the file
+    this.stateManager.writeSectionToFile(sectionKey, updatedSectionCode);
+
+    // Update the LED for the modified stream (new content indication)
+    this.ledManager.updateRowLEDs(row, updatedSectionCode);
+  }
 }
 
-module.exports = MIDIInputHandler;
+module.exports = MIDIInputHandler

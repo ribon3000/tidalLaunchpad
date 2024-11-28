@@ -139,6 +139,54 @@ class StateManager extends EventEmitter {
 
     return modifiedLines.join('\n');
   }
+
+
+  updateStreamInSection(sectionCode, streamKey, newPattern) {
+    // Replace or add the stream in the given section
+    const lines = sectionCode.split('\n');
+    const streamRegex = new RegExp(`^\\s*${streamKey}\\s*\\$.*`);
+
+    let updated = false;
+    const updatedLines = lines.map((line) => {
+      if (streamRegex.test(line)) {
+        updated = true;
+        return `\ \ ${streamKey} $ ${newPattern}`;
+      }
+      return line;
+    });
+
+    // If streamKey not found, append it to the section
+    if (!updated) {
+      updatedLines.push(`\ \ ${streamKey} $ ${newPattern}`);
+    }
+
+    return updatedLines.join('\n');
+  }
+
+  writeSectionToFile(sectionKey, updatedSectionCode) {
+    // Update the internal sections object
+    this.sections[sectionKey] = updatedSectionCode;
+
+    // Write the updated sections back to the file
+    this.fileWatcher.writeFile(this.sections);
+  }
+
+  activateStream(row, col, streamKey, sectionCode) {
+    // Step 1: Set the active stream
+    const previousActiveRow = this.setActiveStream(row, col);
+
+    // Step 2: Modify the section to activate only the desired stream
+    const modifiedCode = this.modifySection(sectionCode, streamKey);
+
+    // Step 3: Send the command to TidalManager to activate the stream
+    this.tidalManager.sendCommand(`:{\n${modifiedCode}\n:}`);
+
+    // Step 4: Clear the modified status for the activated stream
+    this.clearModifiedStreams(row, col);
+
+    // Step 5: Notify LEDManager to update LEDs for the row
+    this.emit('streamActivated', { row, col, previousActiveRow });
+  }
 }
 
 module.exports = StateManager;

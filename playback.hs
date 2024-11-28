@@ -57,8 +57,11 @@ do
 -- section 6
 
 do
-  hush
-
+  hush      
+  d2 $  outside 7 loopFirst $ sew "0!3 1@5" 
+      (stack [s "{~ t ~}%16" # amp 0.2964203797128332, s "{~ t ~}%16"]) 
+      (stack [s "{~ t ~}%16" # amp 0.32098527040836256, s "{~ t}%16"]) # n 36
+      
 -- section 7
 
 do
@@ -66,3 +69,18 @@ do
   d1 $ s "bddfd"
   d2 $ s "hs"
   d8 $ s "sdlfdjk"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

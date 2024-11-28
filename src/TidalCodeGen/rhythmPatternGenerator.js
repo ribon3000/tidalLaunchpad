@@ -27,10 +27,9 @@ class RhythmPatternGenerator extends BasePatternGenerator {
       const sewPattern = this.generateSewPattern();
   
       // Construct the final pattern
-      const patternCode = `
-        d${streamNumber} $ outside ${loopLength} loopFirst $ sew "${sewPattern}" 
-            (stack [s "${patternA2}" # amp ${a2AmpFactor}, s "${patternA1}"]) 
-            (stack [s "${patternB2}" # amp ${b2AmpFactor}, s "${patternB1}"]) # n ${midiNoteNumber}
+      const patternCode = ` outside ${loopLength} loopFirst $ sew "${sewPattern}" 
+      (stack [s "${patternA2}%16" # amp ${a2AmpFactor}, s "${patternA1}%16"]) 
+      (stack [s "${patternB2}%16" # amp ${b2AmpFactor}, s "${patternB1}%16"]) # n ${midiNoteNumber}
       `;
       return patternCode;
     }

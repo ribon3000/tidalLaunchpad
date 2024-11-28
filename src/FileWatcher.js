@@ -20,6 +20,18 @@ class FileWatcher extends EventEmitter {
   readFile() {
     return FileReader.readFile(this.filePath);
   }
+
+  writeFile(sections) {
+    let fileContent = '';
+
+    // Reconstruct the file from the sections
+    Object.keys(sections).forEach((key) => {
+      fileContent += `-- section ${key}\n${sections[key]}\n`;
+    });
+
+    fs.writeFileSync(this.filePath, fileContent);
+    console.log(`File updated with new sections.`);
+  }
 }
 
 module.exports = FileWatcher;
