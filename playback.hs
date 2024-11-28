@@ -53,9 +53,9 @@ do
 -- section 5
 do
   hush
-  d2 $ outside 8 loopFirst $ sew "0@2 1@4"
-    (stack [s "{~ ~ ~ t}%16" # amp 0.41644737424241285, s "{~ ~ ~ ~ ~ ~ t}%16"])
-    (stack [s "{~ ~ t ~}%16" # amp 0.3674117197591398, s "{~ ~ ~ t}%16"]) # n 36
+  d2 $ outside 4 loopFirst $ sew "0@4 1@2"
+    (stack [s "{~ ~ ~ ~ t ~ ~}%16" # amp 0.25889497012039103, s "{~ ~ t ~ ~ ~}%16"])
+    (stack [s "{~ ~ ~ ~ t}%16" # amp 0.6284797677343616, s "{~ ~ ~ ~ t}%16"]) # n 36
 
 -- section 6
 do
