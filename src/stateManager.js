@@ -167,26 +167,44 @@ class StateManager extends EventEmitter {
 
 
   updateStreamInSection(sectionCode, streamKey, newPattern) {
-    // Replace or add the stream in the given section
     const lines = sectionCode.split('\n');
-    const streamRegex = new RegExp(`^\\s*${streamKey}\\s*\\$.*`);
-
+    const streamRegex = new RegExp(`^\\s*${streamKey}\\s*\\$`);
     let updated = false;
-    const updatedLines = lines.map((line) => {
-      if (streamRegex.test(line)) {
-        updated = true;
-        return `\ \ ${streamKey} $ ${newPattern}`;
-      }
-      return line;
-    });
+    const updatedLines = [];
+    let skipLines = false;
+
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+
+        if (streamRegex.test(line)) {
+            // Start of the stream block to replace
+            updated = true;
+            skipLines = true;
+            // Add the new stream code
+            updatedLines.push(`  ${streamKey} $ ${newPattern}`);
+            continue;
+        }
+
+        if (skipLines) {
+            // Check if the line is the start of another stream or end of the block
+            const isAnotherStream = /^\s*(d[1-8])\s*\$/.test(line);
+            if (isAnotherStream || line.trim() === '' || /^-- section/.test(line)) {
+                skipLines = false;
+            } else {
+                continue; // Skip lines belonging to the old stream block
+            }
+        }
+        updatedLines.push(line);
+    }
 
     // If streamKey not found, append it to the section
     if (!updated) {
-      updatedLines.push(`\ \ ${streamKey} $ ${newPattern}`);
+        updatedLines.push(`  ${streamKey} $ ${newPattern}`);
     }
 
     return updatedLines.join('\n');
-  }
+}
+
 
   writeSectionToFile(sectionKey, updatedSectionCode) {
     // Update the internal sections object

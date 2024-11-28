@@ -6,13 +6,9 @@ do
       (stack [s "{~ ~ ~ ~ t ~ ~ ~}%16" # amp 0.27135112508044895, s "{~ ~ t ~ ~ ~ ~}%16"]) 
       (stack [s "{~ ~ ~ ~ ~ ~ t}%16" # amp 0.3431143217358188, s "{~ t ~ ~}%16"]) # n 36
   --incorrect output after generating stream 2 in section 1 twice
-  d2 $  outside 2 loopFirst $ sew "0!3 0@2" 
-      (stack [s "{t ~}%16" # amp 0.3469133360679407, s "{~ ~ t}%16"]) 
-      (stack [s "{~ ~ t ~}%16" # amp 0.5878715245463784, s "{~ t ~ ~}%16"]) # n 36
-      
-      (stack [s "{t ~ ~}%16" # amp 0.2419825785423253, s "{~ ~ t ~ ~}%16"]) 
-      (stack [s "{~ ~ t ~}%16" # amp 0.6245477388295997, s "{t ~}%16"]) # n 36
-  --correct output:
+  d2 $  outside 2 loopFirst $ sew "0@5 1@5" 
+      (stack [s "{~ ~ ~ t}%16" # amp 0.48450990379427744, s "{t ~ ~ ~ ~ ~}%16"]) 
+      (stack [s "{t ~}%16" # amp 0.6535880303612283, s "{~ ~ ~ ~ ~ t ~ ~}%16"]) # n 36     
   d4 $  outside 2 loopFirst $ sew "1!5 1@3" 
       (stack [s "{~ t ~ ~}%16" # amp 0.27557091058272376, s "{~ t ~ ~ ~ ~ ~}%16"]) 
       (stack [s "{~ t}%16" # amp 0.4990334847258771, s "{~ t}%16"]) # n 36
@@ -92,6 +88,20 @@ do
   d2 $  outside 8 loopFirst $ sew "0!3 1!5" 
       (stack [s "{~!3 t}%16" # amp 0.2139064539437661, s "{t ~ ~ ~}%16"]) 
       (stack [s "{~ t}%16" # amp 0.3274676119722802, s "{~ ~ t ~}%16"]) # n 36
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

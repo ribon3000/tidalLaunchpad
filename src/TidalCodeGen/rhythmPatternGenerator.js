@@ -53,9 +53,9 @@ class RhythmPatternGenerator extends BasePatternGenerator {
       return pattern;
     }
   
-    // Generate the boolean pattern for sew (e.g., "0!3 1@5")
+    // Generate the boolean pattern for sew (e.g., "0@3 1@5")
     generateSewPattern() {
-      const sewPattern = `${this.pickRandom(['0', '1'])}!${this.getRandomInt(2, 5)} ${this.pickRandom(['0', '1'])}@${this.getRandomInt(2, 5)}`;
+      const sewPattern = `${this.pickRandom(['0', '0'])}@${this.getRandomInt(2, 5)} ${this.pickRandom(['1', '1'])}@${this.getRandomInt(2, 5)}`;
       return sewPattern;
     }
   }
