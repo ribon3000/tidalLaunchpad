@@ -25,13 +25,18 @@ class FileWatcher extends EventEmitter {
     let fileContent = '';
 
     // Reconstruct the file from the sections
-    Object.keys(sections).forEach((key) => {
-      fileContent += `-- section ${key}\n${sections[key]}\n`;
+    Object.keys(sections).forEach((key, index) => {
+        let sectionContent = sections[key].trim();
+        fileContent += `-- section ${key}\n${sectionContent}`;
+        if (index !== Object.keys(sections).length - 1) {
+            fileContent += '\n\n'; // Add two newlines between sections
+        }
     });
 
     fs.writeFileSync(this.filePath, fileContent);
     console.log(`File updated with new sections.`);
-  }
+}
+
 }
 
 module.exports = FileWatcher;

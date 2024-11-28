@@ -1,18 +1,16 @@
 -- section 1
 do
   hush
-  --correct output:
-  d1 $  outside 8 loopFirst $ sew "1!5 0@4" 
-      (stack [s "{~ ~ ~ ~ t ~ ~ ~}%16" # amp 0.27135112508044895, s "{~ ~ t ~ ~ ~ ~}%16"]) 
-      (stack [s "{~ ~ ~ ~ ~ ~ t}%16" # amp 0.3431143217358188, s "{~ t ~ ~}%16"]) # n 36
-  --incorrect output after generating stream 2 in section 1 twice
-  d2 $  outside 2 loopFirst $ sew "0@5 1@5" 
-      (stack [s "{~ ~ ~ t}%16" # amp 0.48450990379427744, s "{t ~ ~ ~ ~ ~}%16"]) 
-      (stack [s "{t ~}%16" # amp 0.6535880303612283, s "{~ ~ ~ ~ ~ t ~ ~}%16"]) # n 36     
-  d4 $  outside 2 loopFirst $ sew "1!5 1@3" 
-      (stack [s "{~ t ~ ~}%16" # amp 0.27557091058272376, s "{~ t ~ ~ ~ ~ ~}%16"]) 
-      (stack [s "{~ t}%16" # amp 0.4990334847258771, s "{~ t}%16"]) # n 36
-      
+  d1 $ outside 4 loopFirst $ sew "0@3 1@3"
+    (stack [s "{t ~ ~}%16" # amp 0.26906435173630144, s "{~ ~ ~ ~ ~ ~ t ~}%16"])
+    (stack [s "{~ ~ ~ t}%16" # amp 0.5368693229529086, s "{~ ~ ~ ~ ~ ~ t}%16"]) # n 36
+  d2 $ outside 5 loopFirst $ sew "0@3 1@5"
+    (stack [s "{t ~ ~ ~ ~ ~ ~ ~}%16" # amp 0.46236589352937046, s "{~ ~ ~ t ~}%16"])
+    (stack [s "{t ~ ~ ~ ~ ~ ~}%16" # amp 0.5598338349016441, s "{t ~ ~ ~}%16"]) # n 36
+  d4 $ outside 6 loopFirst $ sew "0@3 1@5"
+    (stack [s "{~ ~ ~ t ~ ~ ~}%16" # amp 0.30481525695995004, s "{~ t}%16"])
+    (stack [s "{t ~ ~ ~}%16" # amp 0.47059760722362715, s "{~ ~ ~ ~ ~ ~ t}%16"]) # n 36
+
 -- section 2
 do
   hush
@@ -29,7 +27,6 @@ do
   d4 $ outside 8 (loopFirst) $ fast 1 $ struct ("t({11 11 9 5 7}%16,16,{0 0 -1}%8)") $ s "sdfhk" # n (43 + "{0 0 0 12 0 -12 0}%16" + "0 5 -2 7") # legato "{1 0.2 2 1 1 3 0.5}%16" # amp "{0.2 0.2 1 0.2 0.2}%4" # val1 "{0 1 0 0.25 0.5}%8" # val2 (segment 16 $ rand)
 
 -- section 3
-
 do
     hush
     let val1 = pF "val1"
@@ -46,62 +43,39 @@ do
     d2 $ every 0 (struct pat) $ s "bd*4" # n "36" # amp 1 # velocity 127
     d3 $ s "bd/4" # n ("[60,67,75]" + (slow 4 "<0 5 -2 7>" - 12))
     d4 $ fast 4 $ degradeBy 0.2 $ bite 8 (slow 2 $ (markovPat 8 1 [[3,5,2,1], [4,4,2,1], [0,1,0,1],[3,2,2,0]]) + "<0 1>") $ s "sdhjh(7,8,<0 -4>)" # n (30 + ((run 8) * 5)) # amp "{0.4 2 0.3}%8" # legato "{0.2 1 0.3 2 1 1}%8" # val1 (rand) # val2 (1 <~ rand)
-  
-    
--- section 4
 
+-- section 4
 do
   hush
   d1 $ s "bd*8" # amp 0.2
   d3 $ s "bd/2" # n ("[60,67,75]" + (slow 4 "<0 5 -2 2 7>" - 24))
 
 -- section 5
-
 do
   hush
 
   d2 $  outside 6 loopFirst $ sew "0!4 1@5" 
       (stack [s "{~ ~ ~ ~ t ~ ~ ~}%16" # amp 0.22225661084906087, s "{t ~ ~ ~ ~ ~}%16"]) 
       (stack [s "{~ t ~}%16" # amp 0.34400728497041316, s "{~ ~ t}%16"]) # n 36
-      
--- section 6
 
+-- section 6
 do
   hush      
   d2 $  outside 7 loopFirst $ sew "0!3 1@5" 
       (stack [s "{~ t ~}%16" # amp 0.2964203797128332, s "{~ t ~}%16"]) 
       (stack [s "{~ t ~}%16" # amp 0.32098527040836256, s "{~ t}%16"]) # n 36
-      
 
 -- section 7
-
 do
   hush
 
   d2 $  outside 2 loopFirst $ sew "1!3 0@5" 
       (stack [s "{~ ~ ~ t ~}%16" # amp 0.4849015719889291, s "{~ ~ ~ t ~ ~ ~ ~}%16"]) 
       (stack [s "{~ ~ ~ t}%16" # amp 0.5135587075762597, s "{~ ~ ~ ~ t ~}%16"]) # n 36
-      
+
 -- section 8
 do
   hush
   d2 $  outside 8 loopFirst $ sew "0!3 1!5" 
       (stack [s "{~!3 t}%16" # amp 0.2139064539437661, s "{t ~ ~ ~}%16"]) 
       (stack [s "{~ t}%16" # amp 0.3274676119722802, s "{~ ~ t ~}%16"]) # n 36
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

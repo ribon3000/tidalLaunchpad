@@ -180,8 +180,16 @@ class StateManager extends EventEmitter {
             // Start of the stream block to replace
             updated = true;
             skipLines = true;
-            // Add the new stream code
-            updatedLines.push(`  ${streamKey} $ ${newPattern}`);
+
+            // Prepare the new stream code
+            const newPatternLines = newPattern.trim().split('\n');
+            newPatternLines[0] = `  ${streamKey} $ ${newPatternLines[0].trim()}`;
+
+            for (let j = 1; j < newPatternLines.length; j++) {
+                newPatternLines[j] = '    ' + newPatternLines[j].trim(); // Indent subsequent lines
+            }
+
+            updatedLines.push(...newPatternLines);
             continue;
         }
 
@@ -199,10 +207,26 @@ class StateManager extends EventEmitter {
 
     // If streamKey not found, append it to the section
     if (!updated) {
-        updatedLines.push(`  ${streamKey} $ ${newPattern}`);
+        const newPatternLines = newPattern.trim().split('\n');
+        newPatternLines[0] = `  ${streamKey} $ ${newPatternLines[0].trim()}`;
+
+        for (let j = 1; j < newPatternLines.length; j++) {
+            newPatternLines[j] = '    ' + newPatternLines[j].trim(); // Indent subsequent lines
+        }
+
+        updatedLines.push(...newPatternLines);
     }
 
-    return updatedLines.join('\n');
+    // Remove any extra blank lines
+    const finalLines = updatedLines.filter((line, index, arr) => {
+        // Remove consecutive blank lines
+        if (line.trim() === '' && arr[index - 1]?.trim() === '') {
+            return false;
+        }
+        return true;
+    });
+
+    return finalLines.join('\n').trim();
 }
 
 
