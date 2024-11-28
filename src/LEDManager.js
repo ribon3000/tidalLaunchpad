@@ -8,7 +8,6 @@ class LEDManager {
     this.ledColors = { off: 0, on: 3, active: 35, modified: 60 };
   }
 
-
   updateRowLEDs(row, sectionCode) {
     const streams = this.stateManager.parseStreams(sectionCode);
     const modifiedStreams = this.stateManager.getModifiedStreams(row);
@@ -19,15 +18,15 @@ class LEDManager {
       let color;
   
       if (streams.hasOwnProperty(`d${col + 1}`)) {
-        if (activeStreams[col] === row) {
-          color = this.ledColors.active; // Active (orange)
-        } else if (modifiedStreams.includes(col)) {
-          color = this.ledColors.modified; // Modified (green)
+        if (modifiedStreams.includes(col)) {
+          color = this.ledColors.modified; // Highlight modified stream (green)
+        } else if (activeStreams[col] === row) {
+          color = this.ledColors.active; // Highlight active stream (orange)
         } else {
-          color = this.ledColors.on; // Default color (red)
+          color = this.ledColors.on; // Default color for an unmodified, available stream (red)
         }
       } else {
-        color = this.ledColors.off; // Off
+        color = this.ledColors.off; // No stream available at this button position
       }
   
       this.midiManager.setLED(note, color);
