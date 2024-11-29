@@ -1,9 +1,10 @@
+// index.js
 const CLIManager = require('./src/CLIManager');
 const MIDIManager = require('./src/MIDIManager');
-const TidalManager = require('./src/tidalManager');
-const StateManager = require('./src/stateManager');
+const TidalManager = require('./src/TidalManager');
+const StateManager = require('./src/StateManager');
 const LEDManager = require('./src/LEDManager');
-const RhythmPatternGenerator = require('./src/TidalCodeGen/rhythmPatternGenerator')
+const RhythmPatternGenerator = require('./src/TidalCodeGen/rhythmPatternGenerator');
 const MIDIInputHandler = require('./src/MIDIInputHandler.js');
 
 // Initialize CLI Manager and parse arguments
@@ -22,7 +23,7 @@ tidal.start();
 
 const state = new StateManager(tidal, tidalCodeFile);
 const ledManager = new LEDManager(midiManager, state);
-const patternGen = new RhythmPatternGenerator()
+const patternGen = new RhythmPatternGenerator();
 
 // Initialize MIDI Input Handler to manage MIDI interactions
 new MIDIInputHandler(midiManager, state, ledManager, patternGen);
@@ -34,27 +35,33 @@ state.on('fileChanged', () => {
   console.log('File changed, updating LEDs...');
   ledManager.updateAllLEDs();
 });
-state.on('streamActivated', ({ row, col, previousActiveRow }) => {
-  // Update LEDs for the newly activated stream
-  ledManager.setActiveStream(row, col);
 
-  // Update LEDs for the previously active row if different
+state.on('clipActivated', ({ row, track, previousActiveRow }) => {
+  ledManager.setActiveClip(row, track);
+
   if (previousActiveRow !== null && previousActiveRow !== row) {
-    const sections = state.getSections();
-    const sectionCode = sections[previousActiveRow + 1];
-    ledManager.updateRowLEDs(previousActiveRow, sectionCode);
+    const scenes = state.getScenes();
+    const sceneCode = scenes[previousActiveRow + 1];
+    ledManager.updateRowLEDs(previousActiveRow, sceneCode);
   }
 });
 
-state.on('streamDeactivated', ({ col, previousActiveRow }) => {
-  // Update LEDs for the row where the stream was deactivated
+state.on('clipDeactivated', ({ track, previousActiveRow }) => {
   if (previousActiveRow !== null) {
-    const sections = state.getSections();
-    const sectionCode = sections[previousActiveRow + 1];
-    ledManager.updateRowLEDs(previousActiveRow, sectionCode);
+    const scenes = state.getScenes();
+    const sceneCode = scenes[previousActiveRow + 1];
+    ledManager.updateRowLEDs(previousActiveRow, sceneCode);
   }
 });
 
-state.on('sceneLaunched', ({ row, activeStreams, previousActiveStreams }) => {
-  ledManager.handleSceneLaunched(row, activeStreams, previousActiveStreams);
+state.on('sceneLaunched', ({ row, activeClips, previousActiveClips }) => {
+  ledManager.handleSceneLaunched(row, activeClips, previousActiveClips);
+});
+
+state.on('clipDeactivated', ({ track, previousActiveRow }) => {
+  if (previousActiveRow !== null) {
+    const scenes = state.getScenes();
+    const sceneCode = scenes[previousActiveRow + 1];
+    ledManager.updateRowLEDs(previousActiveRow, sceneCode);
+  }
 });

@@ -26,7 +26,7 @@ class MIDIInputHandler {
       }
     }
 
-    // Handle Stream Button Press (Grid Button)
+    // Handle Clip Button Press (Grid Button)
     if (status === 144 && velocity > 0) {
       const row = Math.floor(key / 16);
       const col = key % 16;
@@ -34,7 +34,7 @@ class MIDIInputHandler {
       console.log(`Grid button pressed: row ${row}, col ${col}`);
 
       if (this.generateModeActive) {
-        console.log(`Generating pattern for stream d${col + 1} in row ${row}`);
+        console.log(`Generating pattern for clip d${col + 1} in row ${row}`);
         this.generatePattern(row, col);
       } else {
         // Regular grid button handling
@@ -44,13 +44,13 @@ class MIDIInputHandler {
   }
 
   handleGridButtonPress(row, col) {
-    const sections = this.stateManager.getSections();
-    const sectionKey = row + 1;
-    const sectionCode = sections[sectionKey];
+    const scenes = this.stateManager.getScenes();
+    const sceneKey = row + 1;
+    const sceneCode = scenes[sceneKey];
     
-    if (!sectionCode) {
-      console.log(`No section found for row ${row + 1}, muting...`);
-      this.stateManager.deactivateStream(col);
+    if (!sceneCode) {
+      console.log(`No scene found for row ${row + 1}, muting...`);
+      this.stateManager.deactivateClip(col);
       return;
     }
 
@@ -58,40 +58,40 @@ class MIDIInputHandler {
       // Scene launch button
       this.stateManager.launchScene(row);
     } else {
-      const streamKey = `d${col + 1}`;
-      const streams = this.stateManager.parseStreams(sectionCode);
+      const clipKey = `d${col + 1}`;
+      const clips = this.stateManager.parseClips(sceneCode);
 
-      if (streams.hasOwnProperty(streamKey)) {
-        // Activate stream
-        this.stateManager.activateStream(row, col, streamKey, sectionCode);
+      if (clips.hasOwnProperty(clipKey)) {
+        // Activate clip
+        this.stateManager.activateClip(row, col, clipKey, sceneCode);
       } else {
-        // Mute stream
-        this.stateManager.deactivateStream(col);
+        // Mute clip
+        this.stateManager.deactivateClip(col);
       }
     }
   }
 
   generatePattern(row, col) {
     // Use the RhythmPatternGenerator to generate a new pattern
-    const streamNumber = col + 1; // Match col (0-7) to d1-d8
-    const generatedPattern = this.patternGenerator.generatePattern(streamNumber);
+    const clipNumber = col + 1; // Match col (0-7) to d1-d8
+    const generatedPattern = this.patternGenerator.generatePattern(clipNumber);
 
-    // Get the current sections and replace the code for the specific stream
-    const sections = this.stateManager.getSections();
-    const sectionKey = row + 1; // Section key is 1-based row index
-    if (!sections[sectionKey]) {
-      console.log(`No section found for row ${sectionKey}`);
+    // Get the current scenes and replace the code for the specific clip
+    const scenes = this.stateManager.getScenes();
+    const sceneKey = row + 1; // Scene key is 1-based row index
+    if (!scenes[sceneKey]) {
+      console.log(`No scene found for row ${sceneKey}`);
       return;
     }
 
-    // Update the section with the generated pattern
-    const updatedSectionCode = this.stateManager.updateStreamInSection(sections[sectionKey], `d${streamNumber}`, generatedPattern);
+    // Update the scene with the generated pattern
+    const updatedSceneCode = this.stateManager.updateClipInScene(scenes[sceneKey], `d${clipNumber}`, generatedPattern);
 
-    // Write the updated section to the file
-    this.stateManager.writeSectionToFile(sectionKey, updatedSectionCode);
+    // Write the updated scene to the file
+    this.stateManager.writeSceneToFile(sceneKey, updatedSceneCode);
 
-    // Update the LED for the modified stream (new content indication)
-    this.ledManager.updateRowLEDs(row, updatedSectionCode);
+    // Update the LED for the modified clip (new content indication)
+    this.ledManager.updateRowLEDs(row, updatedSceneCode);
   }
 }
 

@@ -8,25 +8,25 @@ class LEDManager {
     this.ledColors = { off: 0, on: 3, active: 35, modified: 60 };
   }
 
-  updateRowLEDs(row, sectionCode) {
-    const streams = this.stateManager.parseStreams(sectionCode);
-    const modifiedStreams = this.stateManager.getModifiedStreams(row);
-    const activeStreams = this.stateManager.getActiveStreams();
+  updateRowLEDs(row, sceneCode) {
+    const clips = this.stateManager.parseClips(sceneCode);
+    const modifiedClips = this.stateManager.getModifiedClips(row);
+    const activeClips = this.stateManager.getActiveClips();
   
     for (let col = 0; col < 8; col++) {
       const note = this.rowMapping[row] + col;
       let color;
   
-      if (streams.hasOwnProperty(`d${col + 1}`)) {
-        if (modifiedStreams.includes(col)) {
-          color = this.ledColors.modified; // Highlight modified stream (green)
-        } else if (activeStreams[col] === row) {
-          color = this.ledColors.active; // Highlight active stream (orange)
+      if (clips.hasOwnProperty(`d${col + 1}`)) {
+        if (modifiedClips.includes(col)) {
+          color = this.ledColors.modified; // Highlight modified clip (green)
+        } else if (activeClips[col] === row) {
+          color = this.ledColors.active; // Highlight active clip (orange)
         } else {
-          color = this.ledColors.on; // Default color for an unmodified, available stream (red)
+          color = this.ledColors.on; // Default color for an unmodified, available clip (red)
         }
       } else {
-        color = this.ledColors.off; // No stream available at this button position
+        color = this.ledColors.off; // No clip available at this button position
       }
   
       this.midiManager.setLED(note, color);
@@ -35,79 +35,79 @@ class LEDManager {
   
 
   updateAllLEDs() {
-    const sections = this.stateManager.getSections();
+    const scenes = this.stateManager.getScenes();
     this.midiManager.clearLEDs();
-    Object.keys(sections).forEach((sectionKey) => {
-      const row = parseInt(sectionKey, 10) - 1;
+    Object.keys(scenes).forEach((sceneKey) => {
+      const row = parseInt(sceneKey, 10) - 1;
       if (row >= 0 && row < 8) {
-        const sectionCode = sections[sectionKey];
-        this.updateRowLEDs(row, sectionCode);
+        const sceneCode = scenes[sceneKey];
+        this.updateRowLEDs(row, sceneCode);
       }
     });
   }
 
-  setActiveStream(row, col) {
-    console.log(`Activating stream in row ${row}, column ${col}`);
+  setActiveClip(row, col) {
+    console.log(`Activating clip in row ${row}, column ${col}`);
 
-    // Deactivate the previously active stream in the column
-    const previousActiveRow = this.stateManager.setActiveStream(row, col);
+    // Deactivate the previously active clip in the column
+    const previousActiveRow = this.stateManager.setActiveClip(row, col);
     if (previousActiveRow !== null && previousActiveRow !== row) {
-      console.log(`Deactivating previous active stream in row ${previousActiveRow}, column ${col}`);
-      const sections = this.stateManager.getSections();
-      const sectionCode = sections[previousActiveRow + 1];
-      this.updateRowLEDs(previousActiveRow, sectionCode);
+      console.log(`Deactivating previous active clip in row ${previousActiveRow}, column ${col}`);
+      const scenes = this.stateManager.getScenes();
+      const sceneCode = scenes[previousActiveRow + 1];
+      this.updateRowLEDs(previousActiveRow, sceneCode);
     }
 
     // Update the LEDs for the newly activated row
-    const sectionCode = this.stateManager.getSections()[row + 1];
-    this.updateRowLEDs(row, sectionCode);
+    const sceneCode = this.stateManager.getScenes()[row + 1];
+    this.updateRowLEDs(row, sceneCode);
   }
 
-  deactivateStream(col) {
-    console.log(`Deactivating stream in column ${col}`);
+  deactivateClip(col) {
+    console.log(`Deactivating clip in column ${col}`);
 
-    const previousActiveRow = this.stateManager.getActiveStreams()[col];
+    const previousActiveRow = this.stateManager.getActiveClips()[col];
     if (previousActiveRow !== null) {
-      const sections = this.stateManager.getSections();
-      const sectionCode = sections[previousActiveRow + 1];
-      this.stateManager.deactivateStream(col);
-      this.updateRowLEDs(previousActiveRow, sectionCode);
+      const scenes = this.stateManager.getScenes();
+      const sceneCode = scenes[previousActiveRow + 1];
+      this.stateManager.deactivateClip(col);
+      this.updateRowLEDs(previousActiveRow, sceneCode);
     }
   }
 
   setSceneActive(row) {
-    console.log(`Setting all streams in row ${row} as active`);
+    console.log(`Setting all clips in row ${row} as active`);
 
-    // Deactivate all other streams
+    // Deactivate all other clips
     for (let col = 0; col < 8; col++) {
-      this.stateManager.deactivateStream(col);
+      this.stateManager.deactivateClip(col);
     }
-    const sections = this.stateManager.getSections();
+    const scenes = this.stateManager.getScenes();
 
     // Update LEDs for all rows
-    Object.keys(sections).forEach((sectionKey, index) => {
-      this.updateRowLEDs(index, sections[sectionKey]);
+    Object.keys(scenes).forEach((sceneKey, index) => {
+      this.updateRowLEDs(index, scenes[sceneKey]);
     });
 
-    // Set all streams in the row as active
+    // Set all clips in the row as active
     for (let col = 0; col < 8; col++) {
-      this.stateManager.setActiveStream(row, col);
+      this.stateManager.setActiveClip(row, col);
     }
 
     // Update LEDs for the active row
-    const sectionCode = sections[row + 1];
-    this.updateRowLEDs(row, sectionCode);
+    const sceneCode = scenes[row + 1];
+    this.updateRowLEDs(row, sceneCode);
   }
 
 
-  handleSceneLaunched(row, activeStreams, previousActiveStreams) {
-    const sections = this.stateManager.getSections();
+  handleSceneLaunched(row, activeClips, previousActiveClips) {
+    const scenes = this.stateManager.getScenes();
   
     // Update LEDs for all rows
     for (let r = 0; r < 8; r++) {
-      const sectionCode = sections[r + 1];
-      if (sectionCode) {
-        this.updateRowLEDs(r, sectionCode);
+      const sceneCode = scenes[r + 1];
+      if (sceneCode) {
+        this.updateRowLEDs(r, sceneCode);
       }
     }
   }

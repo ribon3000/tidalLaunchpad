@@ -53,16 +53,16 @@ do
 -- section 5
 do
   hush
-  d2 $ outside 4 loopFirst $ sew "0@4 1@2"
-    (stack [s "{~ ~ ~ ~ t ~ ~}%16" # amp 0.25889497012039103, s "{~ ~ t ~ ~ ~}%16"])
-    (stack [s "{~ ~ ~ ~ t}%16" # amp 0.6284797677343616, s "{~ ~ ~ ~ t}%16"]) # n 36
+  d2 $ outside 7 loopFirst $ sew "0@4 1@4"
+    (stack [s "{t ~ ~ ~}%16" # amp 0.24592306875027478, s "{~ ~ t}%16"])
+    (stack [s "{t ~}%16" # amp 0.5191145694531487, s "{~ t ~ ~ ~}%16"]) # n 36
 
 -- section 6
 do
   hush      
-  d2 $  outside 7 loopFirst $ sew "0!3 1@5" 
-      (stack [s "{~ t ~}%16" # amp 0.2964203797128332, s "{~ t ~}%16"]) 
-      (stack [s "{~ t ~}%16" # amp 0.32098527040836256, s "{~ t}%16"]) # n 36
+  d2 $ outside 4 loopFirst $ sew "0@5 1@4"
+    (stack [s "{~ t ~}%16" # amp 0.3427267873623736, s "{~ t ~ ~ ~ ~ ~}%16"])
+    (stack [s "{t ~}%16" # amp 0.61361717931587, s "{~ t ~}%16"]) # n 36
 
 -- section 7
 do
