@@ -30,7 +30,7 @@ class AcidBasslineGenerator extends BasePatternGenerator {
 
     generatePattern(streamN = 1) {
         
-        const trigPattern = this.generateTrigPattern()
+        const trigPattern = this.generateEuclidTrigPattern()
 
 
         // Construct the final pattern
@@ -45,7 +45,7 @@ class AcidBasslineGenerator extends BasePatternGenerator {
         return patternCode;
       }
 
-    generateTrigPattern(){
+    generateEuclidTrigPattern(){
 
         const generateNum = (sv = 0) => {
             let nums = ""
@@ -94,6 +94,32 @@ class AcidBasslineGenerator extends BasePatternGenerator {
         const euclidFills = generateSubPat(this.getRandomInt(8,16,0.5),0.125)
         const euclidRotations = generateSubPat(this.getRandomInt(0,3,1.5),1.5)
         return `"t( ${euclidFills} , 16 , ${euclidRotations} )"`
+    }
+
+    generateOctavePattern(){
+        let octavePattern = ""
+        let octavePatternLen = this.weightedRandom(
+            [
+                {value:3,weight:0.2},
+                {value:4,weight:1},
+                {value:5,weight:0.5},
+                {value:6,weight:0.7},
+                {value:7,weight:0.2},
+                {value:8,weight:1},
+                {value:12,weight:0.6},
+                {value:14,weight:0.5},
+                {value:16,weight:1},
+                //{value: ()=> this.getRandomInt(2,16), weight:99} //we can also do functions here
+            ]
+        )
+        octavePattern += "{"
+        for(let i=0;i<octavePatternLen;i++){
+            let val = (this.probDo(0.2)) ? "24 " : "12 "
+            octavePattern += (this.probDo(0.2)) ? val : "0 "
+        }
+        octavePattern += "}%16"
+
+        return `"${octavePattern}"`
     }
 }
 

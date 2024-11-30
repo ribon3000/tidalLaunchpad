@@ -4,8 +4,8 @@ class BasePatternGenerator {
     }
   
     // Utility function to generate a random number within a range
-    getRandomInt(min, max) {
-      return Math.floor(Math.random() * (max - min + 1)) + min;
+    getRandomInt(min, max, exponent = 1) {
+      return Math.floor(Math.pow(Math.random(),exponent) * (max - min + 1)) + min;
     }
   
     // Utility function to randomly select from an array
@@ -14,8 +14,12 @@ class BasePatternGenerator {
     }
 
     // Utility function to generate a random float between min and max
-    getRandomFloat(min, max) {
-        return Math.random() * (max - min) + min;
+    getRandomFloat(min, max, exponent = 1) {
+        return Math.pow(Math.random(),exponent) * (max - min) + min;
+    }
+
+    probDo(probability) {
+       return((Math.random() < probability))
     }
 
     weightedRandom(options) {
@@ -23,11 +27,12 @@ class BasePatternGenerator {
       let randomNum = Math.random() * totalWeight;
       for (const option of options) {
         if (randomNum < option.weight) {
-          return option.value;
+          return typeof option.value === 'function' ? option.value() : option.value;
         }
         randomNum -= option.weight;
       }
     }
+    
   }
   
 module.exports = BasePatternGenerator
