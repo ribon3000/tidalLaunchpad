@@ -92,10 +92,8 @@ class AcidBasslineGenerator extends BasePatternGenerator {
             return subPat
         }
         let euclidFills = generateSubPat(this.getRandomInt(8,16,0.5),0.125)
-        console.log(euclidFills)
         euclidFills = this.compressSequence(euclidFills)
         let euclidRotations = generateSubPat(this.getRandomInt(0,3,1.5),1.5)
-        console.log(euclidRotations)
         euclidRotations = this.compressSequence(euclidRotations)
         return `"t( ${euclidFills} , 16 , ${euclidRotations} )"`
     }
@@ -122,9 +120,11 @@ class AcidBasslineGenerator extends BasePatternGenerator {
                 {value: "12", weight: 0.8},
                 {value: "0", weight: 6.2}
             ]
-
         return this.generatePolyRhythmicPattern(lenWeights,valWeights,16)
     }
+
+    //we need a base nested/recursive pattern generator for [5 2 [4 2 [3 3 4]]] style stuff
+    //with a maximum recursion level at the topmost thing
 }
 
 module.exports = AcidBasslineGenerator;

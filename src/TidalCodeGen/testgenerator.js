@@ -7,5 +7,6 @@ const acid = new AcidBasslineGenerator();
 
 
 for (let i = 0; i < 10; i++) {
+  console.log(generator.generatePattern())
   console.log('\t'+acid.generateEuclidTrigPattern() + ' ' + acid.generateOctavePattern())
 }
