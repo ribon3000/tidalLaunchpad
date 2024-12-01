@@ -74,7 +74,7 @@ class AcidBasslineGenerator extends BasePatternGenerator {
                     subPat = (subPat > 0) ? subPat : sv
                 } else {
                     let subPatLen = this.getRandomInt(2,5)
-                    let subPatVals = brackets[0]
+                    let subPatVals = brackets[0] + " "
     
                     for(let i=0;i<subPatLen;i++) {
                             const newVal = generateNum(sv)
@@ -91,8 +91,12 @@ class AcidBasslineGenerator extends BasePatternGenerator {
             }
             return subPat
         }
-        const euclidFills = generateSubPat(this.getRandomInt(8,16,0.5),0.125)
-        const euclidRotations = generateSubPat(this.getRandomInt(0,3,1.5),1.5)
+        let euclidFills = generateSubPat(this.getRandomInt(8,16,0.5),0.125)
+        console.log(euclidFills)
+        euclidFills = this.compressSequence(euclidFills)
+        let euclidRotations = generateSubPat(this.getRandomInt(0,3,1.5),1.5)
+        console.log(euclidRotations)
+        euclidRotations = this.compressSequence(euclidRotations)
         return `"t( ${euclidFills} , 16 , ${euclidRotations} )"`
     }
 
@@ -107,27 +111,19 @@ class AcidBasslineGenerator extends BasePatternGenerator {
     //BUT lets start simple !!!!
 
     generateOctavePattern(){
-        let octavePattern = ""
-        let octavePatternLen = this.weightedRandom(
-            [
+        let lenWeights= [
                 {value: ()=>this.getRandomEvenInt(2,16,2), weight: 1},
                 {value: ()=>this.getRandomOddInt(3,15,2), weight: 0.5},
                 {value: 8, weight: 1}
             ]
-        )
-        for(let i=0;i<octavePatternLen;i++){
 
-            let val = this.weightedRandom([
+        let valWeights = [
                 {value: "24", weight: 0.2},
                 {value: "12", weight: 0.8},
                 {value: "0", weight: 6.2}
-            ])
-            octavePattern += val + " "
-        }
-        octavePattern = this.compressSequence(octavePattern)
-        octavePattern = "{" + octavePattern + "}%16"
+            ]
 
-        return `"${octavePattern}"`
+        return this.generatePolyRhythmicPattern(lenWeights,valWeights,16)
     }
 }
 
