@@ -96,28 +96,36 @@ class AcidBasslineGenerator extends BasePatternGenerator {
         return `"t( ${euclidFills} , 16 , ${euclidRotations} )"`
     }
 
+    //this could be abstracted into: generatePolyPattern with weights for length and content choices, right?
+    //and since we can use function calls in weights we could even do this recursively (makes no sense for polypatterns but others i guess)
+
+    //recursion goes deep:
+    //so basically there'd be grouped patterns which can also include themselves [], cycling patterns which can also include grouped patterns <> / <[]>
+    //polypatterns which can include cycling and grouped patterns {}%16 / {[[]]<> <[]>}%16
+    //and euclidean patterns which can include any of the above t(<>,16,{[[]] <> [<[]>]}%16)
+    //i guess we're also missing nested cycling patterns <<>> and chord patterns as a subset of grouped patterns [,]
+    //BUT lets start simple !!!!
+
     generateOctavePattern(){
         let octavePattern = ""
         let octavePatternLen = this.weightedRandom(
             [
-                {value:3,weight:0.2},
-                {value:4,weight:1},
-                {value:5,weight:0.5},
-                {value:6,weight:0.7},
-                {value:7,weight:0.2},
-                {value:8,weight:1},
-                {value:12,weight:0.6},
-                {value:14,weight:0.5},
-                {value:16,weight:1},
-                //{value: ()=> this.getRandomInt(2,16), weight:99} //we can also do functions here
+                {value: ()=>this.getRandomEvenInt(2,16,2), weight: 1},
+                {value: ()=>this.getRandomOddInt(3,15,2), weight: 0.5},
+                {value: 8, weight: 1}
             ]
         )
-        octavePattern += "{"
         for(let i=0;i<octavePatternLen;i++){
-            let val = (this.probDo(0.2)) ? "24 " : "12 "
-            octavePattern += (this.probDo(0.2)) ? val : "0 "
+
+            let val = this.weightedRandom([
+                {value: "24", weight: 0.2},
+                {value: "12", weight: 0.8},
+                {value: "0", weight: 6.2}
+            ])
+            octavePattern += val + " "
         }
-        octavePattern += "}%16"
+        octavePattern = this.compressSequence(octavePattern)
+        octavePattern = "{" + octavePattern + "}%16"
 
         return `"${octavePattern}"`
     }
