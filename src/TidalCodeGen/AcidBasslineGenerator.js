@@ -47,53 +47,43 @@ class AcidBasslineGenerator extends BasePatternGenerator {
 
     generateEuclidTrigPattern(){
 
-        const generateNum = (sv = 0) => {
-            let nums = ""
-            if(this.probDo(0.5)){
-                if(this.probDo(0.5)){
-                    nums += this.getRandomInt(sv,15) + " "
-                } else {
-                    const brackets = (this.probDo(0.8)) ? "[]" : "<>"
-                    const part1 = (this.probDo(0.5)) ? this.getRandomInt(1,15) : "0"
-                    const part2 = (this.probDo(0.8)) ? this.getRandomInt(1,15) : "0"
-                    nums += (part1 != part2) ? (brackets[0] + part1 + " " + part2 + brackets[1] + " ") : part1
-                }
-            } else {
-                nums += sv + " "
-            }
-            return nums
-        }
-        const generateSubPat = (sv = 0, expo = 1) => {
-            let subPat = ""
-            const brackets = this.probDo(0.5) ? "[]" : "<>"
-            //generate rotations pattern
-            if(this.probDo(0.5)){
-                if(this.probDo(0.5)){
-                    //simple euclid rotation number, completely random
-                    subPat = this.getRandomInt(0,16,expo)
-                    subPat = (subPat > 0) ? subPat : sv
-                } else {
-                    let subPatLen = this.getRandomInt(2,5)
-                    let subPatVals = brackets[0] + " "
-    
-                    for(let i=0;i<subPatLen;i++) {
-                            const newVal = generateNum(sv)
-                            if(newVal != subPatVals[subPatVals.length-2]) {
-                                subPatVals += newVal
-                            }
-                    }
-                    //subPatVals = subPatVals.slice(0, -1)
-                    subPatVals += brackets[1]
-                    subPat = subPatVals
-                }        
-            } else {
-                subPat = sv
-            }
-            return subPat
-        }
-        let euclidFills = generateSubPat(this.getRandomInt(8,16,0.5),0.125)
+        let fillLenWeights = [
+            {value: 1, weight:2},
+            {value: 2, weight:2},
+            {value: 8, weight:1},
+            {value: () =>  this.getRandomEvenInt(4,12), weight:0.5},
+            {value: () =>  this.getRandomOddInt(3,11), weight:0.5},
+        ]
+        let fillContentWeights = [
+            {value: () => this.getRandomOddInt(3,15), weight:0.5},
+            {value: () => this.getRandomEvenInt(2,16), weight:0.5},
+            // {value: () => {return `${this.getRandomEvenInt(2,16)}!${this.getRandomInt(2,8)}`}, weight:9.5},
+            {value: 16, weight:0.5},
+            {value: () => this.generateSubPat([{value:2, weight:1}]), weight: 0.5}
+        ]
+
+        let offsetContentWeights = [
+            {value: 0, weight: 5},
+            {value: () => this.getRandomOddInt(3,15), weight:1.5},
+            {value: () => this.getRandomEvenInt(2,16), weight:0.5},
+        ]
+
+        // const generateNum = (standardValue = 0) => {
+        //     let nums = ""
+        //     if(this.probDo(0.5)){
+        //             nums += this.getRandomInt(standardValue,15) + " "
+        //         } else {
+        //             const brackets = (this.probDo(0.8)) ? "[]" : "<>"
+        //             const part1 = (this.probDo(0.5)) ? this.getRandomInt(1,15) : "0"
+        //             const part2 = (this.probDo(0.8)) ? this.getRandomInt(1,15) : "0"
+        //             nums += (part1 != part2) ? (brackets[0] + part1 + " " + part2 + brackets[1] + " ") : part1
+        //         }
+        //     return nums
+        // }
+        
+        let euclidFills = this.generateSubPat(fillLenWeights, fillContentWeights)
         euclidFills = this.compressSequence(euclidFills)
-        let euclidRotations = generateSubPat(this.getRandomInt(0,3,1.5),1.5)
+        let euclidRotations = this.generateSubPat(fillLenWeights, offsetContentWeights)
         euclidRotations = this.compressSequence(euclidRotations)
         return `"t( ${euclidFills} , 16 , ${euclidRotations} )"`
     }
@@ -114,17 +104,22 @@ class AcidBasslineGenerator extends BasePatternGenerator {
                 {value: ()=>this.getRandomOddInt(3,15,2), weight: 0.5},
                 {value: 8, weight: 1}
             ]
-
-        let valWeights = [
+            
+            let valWeights = [
                 {value: "24", weight: 0.2},
                 {value: "12", weight: 0.8},
+                {value: ()=>this.generateOctavePattern(), weight:0.2},
                 {value: "0", weight: 6.2}
             ]
-        return this.generatePolyRhythmicPattern(lenWeights,valWeights,16)
+        return this.generatePolyMetricPattern(lenWeights,valWeights,16)
     }
 
     //we need a base nested/recursive pattern generator for [5 2 [4 2 [3 3 4]]] style stuff
     //with a maximum recursion level at the topmost thing
+
+    generateNestedPattern(){
+
+    }
 }
 
 module.exports = AcidBasslineGenerator;
