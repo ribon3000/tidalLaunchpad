@@ -32,18 +32,32 @@ class AcidBasslineGenerator extends BasePatternGenerator {
         
         const trigPattern = this.generateEuclidTrigPattern()
         const loopLength = this.getRandomEvenInt(2,8,1.2)
+        const loopAtPat = this.generateSubPat([{value:()=>this.getRandomInt(1,4,1.5), weight:1}],[
+            {value: ()=>this.getRandomOddInt(1,9,2) + 0.5, weight:1},
+            {value: ()=>this.getRandomOddInt(1,9,2), weight:1},
+            {value: ()=>this.getRandomEvenInt(0,8,2) + 0.5, weight:1},
+            {value: 0, weight:1}
+        ],"<>")
         const fastValue = 1
         const midiNoteNumber = 36
-        const melodyPattern = this.generateSubPat([{value: 8, weight:1}], [{value: 0, weight:1}, {value: ()=> this.getRandomInt(0,12), weight:1}])
+        const melodyPattern = this.generateSubPat([{value: 8, weight:1}], 
+            [
+                {value: 0, weight:1}, 
+                {value: ()=> this.getRandomInt(0,12), weight:1},
+                {value: () => this.generateSubPat([
+                    {value:2,weight:4},
+                    {value:4,weight:1}
+                ]), weight: 1}
+            ])
         const octavePattern = this.generateOctavePattern()
         const accentPattern = "\"{1 0.5!4}%16\""
-        const slidePattern  = this.generatePolyMetricPattern([{value: ()=>this.getRandomOddInt(3,9), weight:1}],[{value: 1, weight:1},{value:1.5, weight:0.5},{value:0.5,weight:0.5}])
-        const cutoffPattern = `(slow ${Math.random() + 0.5} $ rand)`
+        const slidePattern  = this.generatePolyMetricPattern([{value: ()=>this.getRandomOddInt(3,9), weight:1}],[{value: ()=>this.getRandomInt(1,4) * 0.5, weight:1},{value:1,weight:1}])
+        const cutoffPattern = `(slow ${Math.random() * 0.5} $ rand)`
         const macroPattern = `(slow ${Math.random() + 0.5} $ rand)`
 
 
         // Construct the final pattern
-        const patternCode = ` outside ${loopLength} loopFirst $ fast "${fastValue}"
+        const patternCode = ` outside ${loopLength} (loopAt "${loopAtPat}") $ fast "${fastValue}"
         $ s ${trigPattern}
         # n (${midiNoteNumber} + ${octavePattern} + "${melodyPattern}")
         # legato ${slidePattern}
@@ -69,9 +83,9 @@ class AcidBasslineGenerator extends BasePatternGenerator {
         ]
 
         let fillContentWeights = [
-            {value: () => this.getRandomOddInt(3,15), weight:0.5},
-            {value: () => this.getRandomEvenInt(2,16), weight:0.5},
-            {value: () => {return `${this.getRandomEvenInt(2,16)}!${this.getRandomInt(2,8)}`}, weight:0.5},
+            {value: () => this.getRandomOddInt(3,15,0.7), weight:0.5},
+            {value: () => this.getRandomEvenInt(2,16,0.7), weight:0.5},
+            {value: () => {return `${this.getRandomEvenInt(2,16,0.6)}!${this.getRandomInt(2,8,2)}`}, weight:0.5},
             {value: 16, weight:0.5},
             {value: () => this.generateSubPat([{value:2, weight:1}]), weight: 0.5}
         ]
