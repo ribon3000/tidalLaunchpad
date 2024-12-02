@@ -57,7 +57,7 @@ class AcidBasslineGenerator extends BasePatternGenerator {
         let fillContentWeights = [
             {value: () => this.getRandomOddInt(3,15), weight:0.5},
             {value: () => this.getRandomEvenInt(2,16), weight:0.5},
-            // {value: () => {return `${this.getRandomEvenInt(2,16)}!${this.getRandomInt(2,8)}`}, weight:9.5},
+            {value: () => {return `${this.getRandomEvenInt(2,16)}!${this.getRandomInt(2,8)}`}, weight:0.5},
             {value: 16, weight:0.5},
             {value: () => this.generateSubPat([{value:2, weight:1}]), weight: 0.5}
         ]
