@@ -31,29 +31,43 @@ class AcidBasslineGenerator extends BasePatternGenerator {
     generatePattern(streamN = 1) {
         
         const trigPattern = this.generateEuclidTrigPattern()
+        const loopLength = this.getRandomEvenInt(2,8,1.2)
+        const fastValue = 1
+        const midiNoteNumber = 36
+        const melodyPattern = this.generateSubPat([{value: 8, weight:1}], [{value: 0, weight:1}, {value: ()=> this.getRandomInt(0,12), weight:1}])
+        const octavePattern = this.generateOctavePattern()
+        const accentPattern = "\"{1 0.5!4}%16\""
+        const slidePattern  = this.generatePolyMetricPattern([{value: ()=>this.getRandomOddInt(3,9), weight:1}],[{value: 1, weight:1},{value:1.5, weight:0.5},{value:0.5,weight:0.5}])
+        const cutoffPattern = `(slow ${Math.random() + 0.5} $ rand)`
+        const macroPattern = `(slow ${Math.random() + 0.5} $ rand)`
 
 
         // Construct the final pattern
         const patternCode = ` outside ${loopLength} loopFirst $ fast "${fastValue}"
         $ s ${trigPattern}
-        # n (${midiNoteNumber} + ${octavePattern} + ${melodyPattern})
+        # n (${midiNoteNumber} + ${octavePattern} + "${melodyPattern}")
         # legato ${slidePattern}
         # amp ${accentPattern}
-        # val1 ${cutoffPattern}
-        # val2 ${macroPattern}
+        # val1 (slow ${Math.random() + 0.5} $ rand)
+        # val2 (slow ${Math.random() + 0.5} $ rand)
         `;
         return patternCode;
       }
 
     generateEuclidTrigPattern(){
 
+        //workflow: devise weighted random choices for various function call parameters of "generateSubPat"
+        //which can recursively call itself too, with different arguments (weights can be recursive as well, no idea if thats actually useful)
+        //these can then be tweaked to create results we like
+
         let fillLenWeights = [
-            {value: 1, weight:2},
-            {value: 2, weight:2},
-            {value: 8, weight:1},
+            {value: 1, weight:1},
+            {value: 2, weight:1},
+            {value: 4, weight:3},
             {value: () =>  this.getRandomEvenInt(4,12), weight:0.5},
             {value: () =>  this.getRandomOddInt(3,11), weight:0.5},
         ]
+
         let fillContentWeights = [
             {value: () => this.getRandomOddInt(3,15), weight:0.5},
             {value: () => this.getRandomEvenInt(2,16), weight:0.5},
@@ -67,36 +81,13 @@ class AcidBasslineGenerator extends BasePatternGenerator {
             {value: () => this.getRandomOddInt(3,15), weight:1.5},
             {value: () => this.getRandomEvenInt(2,16), weight:0.5},
         ]
-
-        // const generateNum = (standardValue = 0) => {
-        //     let nums = ""
-        //     if(this.probDo(0.5)){
-        //             nums += this.getRandomInt(standardValue,15) + " "
-        //         } else {
-        //             const brackets = (this.probDo(0.8)) ? "[]" : "<>"
-        //             const part1 = (this.probDo(0.5)) ? this.getRandomInt(1,15) : "0"
-        //             const part2 = (this.probDo(0.8)) ? this.getRandomInt(1,15) : "0"
-        //             nums += (part1 != part2) ? (brackets[0] + part1 + " " + part2 + brackets[1] + " ") : part1
-        //         }
-        //     return nums
-        // }
         
         let euclidFills = this.generateSubPat(fillLenWeights, fillContentWeights)
         euclidFills = this.compressSequence(euclidFills)
         let euclidRotations = this.generateSubPat(fillLenWeights, offsetContentWeights)
         euclidRotations = this.compressSequence(euclidRotations)
-        return `"t( ${euclidFills} , 16 , ${euclidRotations} )"`
+        return `"t(${euclidFills},16,${euclidRotations})"`
     }
-
-    //this could be abstracted into: generatePolyPattern with weights for length and content choices, right?
-    //and since we can use function calls in weights we could even do this recursively (makes no sense for polypatterns but others i guess)
-
-    //recursion goes deep:
-    //so basically there'd be grouped patterns which can also include themselves [], cycling patterns which can also include grouped patterns <> / <[]>
-    //polypatterns which can include cycling and grouped patterns {}%16 / {[[]]<> <[]>}%16
-    //and euclidean patterns which can include any of the above t(<>,16,{[[]] <> [<[]>]}%16)
-    //i guess we're also missing nested cycling patterns <<>> and chord patterns as a subset of grouped patterns [,]
-    //BUT lets start simple !!!!
 
     generateOctavePattern(){
         let lenWeights= [
@@ -108,17 +99,9 @@ class AcidBasslineGenerator extends BasePatternGenerator {
             let valWeights = [
                 {value: "24", weight: 0.2},
                 {value: "12", weight: 0.8},
-                {value: ()=>this.generateOctavePattern(), weight:0.2},
                 {value: "0", weight: 6.2}
             ]
         return this.generatePolyMetricPattern(lenWeights,valWeights,16)
-    }
-
-    //we need a base nested/recursive pattern generator for [5 2 [4 2 [3 3 4]]] style stuff
-    //with a maximum recursion level at the topmost thing
-
-    generateNestedPattern(){
-
     }
 }
 
