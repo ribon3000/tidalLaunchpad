@@ -82,6 +82,24 @@ let only = (hush >>)
 :}
 
 :{
+loopFirstAt :: Pattern Time -> Pattern a -> Pattern a
+loopFirstAt = tParam _loopFirstAt
+
+ _loopFirstAt :: Time -> Pattern a -> Pattern a
+ _loopFirstAt offset p = splitQueries $ p { query = f }
+   where
+     f st = map
+              (\(Event c w p' v) ->
+                 Event c (plus <$> w) (plus p') v) $
+              query p (st { arc = adjustArc $ arc st })
+       where
+         s     = start $ arc st
+         delta = sam s - offset
+         adjustArc = fmap (subtract delta)
+         plus = fmap (+ delta)
+}:
+
+:{
 let getState = streamGet tidal
     setI = streamSetI tidal
     setF = streamSetF tidal
