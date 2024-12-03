@@ -38,12 +38,12 @@ class AcidBasslineGenerator extends BasePatternGenerator {
         ],"<>")
         const fastValue = 1
         const midiNoteNumber = 36
-        const melodyPattern = this.generateSubPat([w(()=>8)], 
+        const melodyPattern = this.compressSequence(this.generateSubPat([w(()=>8)], 
             [
                 w(()=>0), 
                 w(()=>this.getRandomInt(0,12)),
                 w(()=>this.generateSubPat([w(()=>2,4),w(()=>4)]))
-            ])
+            ]))
         const octavePattern = this.generateOctavePattern()
         const accentPattern = "\"{1 0.5!4}%16\""
         const slidePattern  = this.generatePolyMetricPattern([w(()=>this.getRandomOddInt(3,9))],[w(()=>this.getRandomInt(1,4) * 0.5),w(()=>1)])

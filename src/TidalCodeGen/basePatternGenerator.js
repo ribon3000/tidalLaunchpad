@@ -166,6 +166,27 @@ class BasePatternGenerator {
     return bracks[0] + pattern.slice(1) + bracks[1]
   }
 
+  generateSubPat(
+        lenWeights = [{value: 8, weight:1}],
+        contentWeights = [{value: () => this.getRandomInt(0,16), weight:1}],
+        brackets = ()=>{return this.probDo(0.5) ? "[]" : "<>"}
+        )
+    {
+    brackets = typeof brackets === 'function' ? brackets() : brackets;
+    let patternLength = this.weightedRandom(lenWeights);
+    let patternArray = [];
+    let i = 0;
+    while (i < patternLength) {
+      let val = this.weightedRandom(contentWeights);
+      let count = this.countIntegersInString(val) || 1;
+      i += count;
+      patternArray.push(val);
+    }
+    const pattern = patternArray.join(' ');
+    pattern = this.compressSequence(pattern)
+    return `${brackets[0]}${pattern}${brackets[1]}`;
+  }
+
   countIntegersInString(input) {
     if(typeof input != "string") return 1
     // Use a regular expression to match all sequences of digits
