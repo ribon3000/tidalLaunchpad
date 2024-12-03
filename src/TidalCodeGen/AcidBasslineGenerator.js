@@ -1,4 +1,4 @@
-const { BasePatternGenerator, w } = require('./BasePatternGenerator');
+const { BasePatternGenerator, w, maybeApply } = require('./BasePatternGenerator');
 /*
     should generate patterns such as this one:
     d4 $ outside 8 (loopFirst) -- loopLen
@@ -45,11 +45,13 @@ class AcidBasslineGenerator extends BasePatternGenerator {
                 w(()=>this.generateSubPat([w(()=>2,4),w(()=>4)]))
             ]))
         const octavePattern = this.generateOctavePattern()
-        const accentPattern = "\"{1 0.5!4}%16\""
+        let accentPattern = "\"{1 0.5!4}%16\""
         const slidePattern  = this.generatePolyMetricPattern([w(()=>this.getRandomOddInt(3,9))],[w(()=>this.getRandomInt(1,4) * 0.5),w(()=>1)])
         const cutoffPattern = `(slow ${Math.random() * 0.5} $ rand)`
         const macroPattern = `(slow ${Math.random() + 0.5} $ rand)`
 
+        const reversePattern = (pattern) => `(rev $ ${pattern})`
+        accentPattern = maybeApply(0.5,reversePattern)(accentPattern)
 
         // Construct the final pattern
         const patternCode = ` outside ${loopLength} (loopAt "${loopAtPat}") $ fast "${fastValue}"

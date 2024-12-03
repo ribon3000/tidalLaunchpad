@@ -225,7 +225,21 @@ class BasePatternGenerator {
   //   w(() => this.getRandomOddInt(3, 11), 0.5),
   // ];
     
+
+  function maybeApply(probability, func) {
+    return (...args) => (Math.random() < probability) ? func(...args) : args[0];
+  }
+  
+  //Usage
+// const reversePattern = (pattern) => `rev ${pattern}`;
+// const basePattern = "t(3,8)";
+
+// const pattern = maybeApply(0.3, reversePattern)(basePattern);
+// 30% chance to reverse the pattern
+
+
   module.exports = {
     BasePatternGenerator,
-    w
+    w,
+    maybeApply
   };
