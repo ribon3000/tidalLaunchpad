@@ -1,4 +1,4 @@
-const BasePatternGenerator = require('./BasePatternGenerator')
+const {BasePatternGenerator} = require('./BasePatternGenerator')
 
 class RhythmPatternGenerator extends BasePatternGenerator {
     constructor() {
