@@ -1,5 +1,4 @@
-const BasePatternGenerator = require('./BasePatternGenerator')
-
+const { BasePatternGenerator, w } = require('./BasePatternGenerator');
 /*
     should generate patterns such as this one:
     d4 $ outside 8 (loopFirst) -- loopLen
@@ -32,26 +31,22 @@ class AcidBasslineGenerator extends BasePatternGenerator {
         
         const trigPattern = this.generateEuclidTrigPattern()
         const loopLength = this.getRandomEvenInt(2,8,1.2)
-        const loopAtPat = this.generateSubPat([{value:()=>this.getRandomInt(1,4,1.5), weight:1}],[
-            {value: ()=>this.getRandomOddInt(1,9,2) + 0.5, weight:1},
-            {value: ()=>this.getRandomOddInt(1,9,2), weight:1},
-            {value: ()=>this.getRandomEvenInt(0,8,2) + 0.5, weight:1},
-            {value: 0, weight:1}
+        const loopAtPat = this.generateSubPat([{value:()=>this.getRandomInt(1,4,2), weight:1}],[
+            w(()=>this.getRandomInt(0,8,2)),
+            w(()=>this.getRandomInt(0,8,2) + 0.5),
+            w(()=>0),
         ],"<>")
         const fastValue = 1
         const midiNoteNumber = 36
-        const melodyPattern = this.generateSubPat([{value: 8, weight:1}], 
+        const melodyPattern = this.generateSubPat([w(()=>8)], 
             [
-                {value: 0, weight:1}, 
-                {value: ()=> this.getRandomInt(0,12), weight:1},
-                {value: () => this.generateSubPat([
-                    {value:2,weight:4},
-                    {value:4,weight:1}
-                ]), weight: 1}
+                w(()=>0), 
+                w(()=>this.getRandomInt(0,12)),
+                w(()=>this.generateSubPat([w(()=>2,4),w(()=>4)]))
             ])
         const octavePattern = this.generateOctavePattern()
         const accentPattern = "\"{1 0.5!4}%16\""
-        const slidePattern  = this.generatePolyMetricPattern([{value: ()=>this.getRandomOddInt(3,9), weight:1}],[{value: ()=>this.getRandomInt(1,4) * 0.5, weight:1},{value:1,weight:1}])
+        const slidePattern  = this.generatePolyMetricPattern([w(()=>this.getRandomOddInt(3,9))],[w(()=>this.getRandomInt(1,4) * 0.5),w(()=>1)])
         const cutoffPattern = `(slow ${Math.random() * 0.5} $ rand)`
         const macroPattern = `(slow ${Math.random() + 0.5} $ rand)`
 
@@ -75,25 +70,25 @@ class AcidBasslineGenerator extends BasePatternGenerator {
         //these can then be tweaked to create results we like
 
         let fillLenWeights = [
-            {value: 1, weight:1},
-            {value: 2, weight:1},
-            {value: 4, weight:3},
-            {value: () =>  this.getRandomEvenInt(4,12), weight:0.5},
-            {value: () =>  this.getRandomOddInt(3,11), weight:0.5},
+            w(()=>1),
+            w(()=>2),
+            w(()=>4,3),
+            w(()=>this.getRandomEvenInt(4,12), 0.5),
+            w(()=>this.getRandomOddInt(3,11), 0.5),
         ]
 
         let fillContentWeights = [
-            {value: () => this.getRandomOddInt(3,15,0.7), weight:0.5},
-            {value: () => this.getRandomEvenInt(2,16,0.7), weight:0.5},
-            {value: () => {return `${this.getRandomEvenInt(2,16,0.6)}!${this.getRandomInt(2,8,2)}`}, weight:0.5},
-            {value: 16, weight:0.5},
-            {value: () => this.generateSubPat([{value:2, weight:1}]), weight: 0.5}
+            w(() => this.getRandomOddInt(3,15,0.7), 0.5),
+            w(() => this.getRandomEvenInt(2,16,0.7), 0.5),
+            w(() => {return `${this.getRandomEvenInt(2,16,0.6)}!${this.getRandomInt(2,8,2)}`}, 0.5),
+            w(() => 16, 0.5),
+            w(() => this.generateSubPat([{value:2, weight:1}]), 0.5)
         ]
 
         let offsetContentWeights = [
-            {value: 0, weight: 5},
-            {value: () => this.getRandomOddInt(3,15), weight:1.5},
-            {value: () => this.getRandomEvenInt(2,16), weight:0.5},
+            w(() =>0, 5),
+            w(() => this.getRandomOddInt(3,15), 1.5),
+            w(() => this.getRandomEvenInt(2,16), 0.5),
         ]
         
         let euclidFills = this.generateSubPat(fillLenWeights, fillContentWeights)
@@ -105,15 +100,15 @@ class AcidBasslineGenerator extends BasePatternGenerator {
 
     generateOctavePattern(){
         let lenWeights= [
-                {value: ()=>this.getRandomEvenInt(2,16,2), weight: 1},
-                {value: ()=>this.getRandomOddInt(3,15,2), weight: 0.5},
-                {value: 8, weight: 1}
+                w(()=>this.getRandomEvenInt(2,16,2)),
+                w(()=>this.getRandomOddInt(3,15,2), 0.5),
+                w(()=>8)
             ]
             
             let valWeights = [
-                {value: "24", weight: 0.2},
-                {value: "12", weight: 0.8},
-                {value: "0", weight: 6.2}
+                w(()=>"24",0.2),
+                w(()=>"12",0.8),
+                w(()=>"0",6.2)
             ]
         return this.generatePolyMetricPattern(lenWeights,valWeights,16)
     }
