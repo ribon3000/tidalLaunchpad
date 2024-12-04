@@ -30,6 +30,10 @@ class MIDIInputHandler {
     if (status === 144 && velocity > 0) {
       const row = Math.floor(key / 16);
       const col = key % 16;
+      if(col>8){
+        console.log('invalid column: '+col)
+        return
+      }
 
       console.log(`Grid button pressed: row ${row}, col ${col}`);
 
