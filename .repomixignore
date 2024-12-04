@@ -12,3 +12,4 @@ BootTidal*
 package-lock.json
 parseOSC.js
 src/TidalCodeGen/RhythmicPatternGenerator.js
+*.tosc
