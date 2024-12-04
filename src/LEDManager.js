@@ -5,7 +5,7 @@ class LEDManager {
     this.midiManager = midiManager;
     this.stateManager = stateManager;
     this.rowMapping = [0, 16, 32, 48, 64, 80, 96, 112]; // Launchpad rows
-    this.ledColors = { off: 0, on: 3, active: 35, modified: 60 };
+    this.ledColors = { off: 0, on: 13, active: 63, modified: 60 };
   }
 
   updateRowLEDs(row, sceneCode) {
