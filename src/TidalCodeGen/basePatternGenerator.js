@@ -49,6 +49,7 @@ class BasePatternGenerator {
       }
     }
 
+
   compressSequence(input) {
     if (typeof input !== 'string') {
         return input;
@@ -113,10 +114,10 @@ class BasePatternGenerator {
                 const compressedGroup = `${currentGroup}${groupContent.join(" ")}${char}`;
                 stack.push(compressedGroup);
             } else if (/\S/.test(char)) {
-                // Accumulate current numbers (multi-digit, fractional, and `!` handling)
-                if (/\d|!|\./.test(char)) {
+                // Accumulate current numbers (multi-digit, fractional, negative, and `!` handling)
+                if (/\d|!|\./.test(char) || (char === '-' && /\d|\./.test(subInput[i + 1]))) {
                     let num = char;
-                    while (i + 1 < subInput.length && /[\d!\.]/.test(subInput[i + 1])) {
+                    while (i + 1 < subInput.length && /[\d!\.\-]/.test(subInput[i + 1])) {
                         num += subInput[++i];
                     }
                     currentSequence.push(num);
@@ -132,39 +133,22 @@ class BasePatternGenerator {
         }
 
         return stack.join(" ");
-    };
+      };
 
-    // Trim input and check if it's a single value
-    input = input.trim();
-    if (!input.includes(" ") && !input.includes("[") && !input.includes("<")) {
-        return input; // Return single value as-is
-    }
+      // Trim input and check if it's a single value
+      input = input.trim();
+      if (!input.includes(" ") && !input.includes("[") && !input.includes("<")) {
+          return input; // Return single value as-is
+      }
 
-    // Parse recursively for groups and sequences
-    const result = parseAndCompress(input.split(""));
+      // Parse recursively for groups and sequences
+      const result = parseAndCompress(input.split(""));
 
-    // Post-process to remove unwanted spaces near group delimiters
-    return result.replace(/\[\s+/g, "[").replace(/\s+\]/g, "]")
-                 .replace(/<\s+/g, "<").replace(/\s+>/g, ">");
-}
-
-
-  generateSubPat = (
-      lenWeights = [{value: 8, weight:1}],
-      contentWeights = [{value: () => this.getRandomInt(0,16), weight:1}],
-      brackets = ()=>{return this.probDo(0.5) ? "[]" : "<>"}) => 
-  {
-    let patternLength = this.weightedRandom(lenWeights)
-    let pattern = ""  
-    for(let i=0;i<patternLength;i++) {
-        let val = this.weightedRandom(contentWeights)
-        let count = this.countIntegersInString(val)
-        i+= (count > 1) ? count-1 : 0
-        pattern += " " + val
-    }
-    let bracks = (typeof brackets === 'function') ? brackets() : brackets
-    return bracks[0] + pattern.slice(1) + bracks[1]
+      // Post-process to remove unwanted spaces near group delimiters
+      return result.replace(/\[\s+/g, "[").replace(/\s+\]/g, "]")
+                  .replace(/<\s+/g, "<").replace(/\s+>/g, ">");
   }
+
 
   generateSubPat(
         lenWeights = [{value: 8, weight:1}],
@@ -182,7 +166,7 @@ class BasePatternGenerator {
       i += count;
       patternArray.push(val);
     }
-    const pattern = patternArray.join(' ');
+    let pattern = patternArray.join(' ');
     pattern = this.compressSequence(pattern)
     return `${brackets[0]}${pattern}${brackets[1]}`;
   }

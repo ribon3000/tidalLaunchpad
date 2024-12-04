@@ -17,10 +17,6 @@ const { BasePatternGenerator, w, maybeApply } = require('./BasePatternGenerator'
        # val2 (segment 16 $ rand) -- i like the option of having these be random
 */
 
-//some notes on euclid trig generation for acid patterns
-//fill values should trend towards 16 rather than 0
-//whereas rotation values should be many and most of them should be 0
-
 class AcidBasslineGenerator extends BasePatternGenerator {
     constructor() {
         super()
@@ -50,6 +46,7 @@ class AcidBasslineGenerator extends BasePatternGenerator {
         const cutoffPattern = `(slow ${Math.random() * 0.5} $ rand)`
         const macroPattern = `(slow ${Math.random() + 0.5} $ rand)`
 
+        //maybe apply some functions
         const reversePattern = (pattern) => `(rev $ ${pattern})`
         accentPattern = maybeApply(0.5,reversePattern)(accentPattern)
 
@@ -87,15 +84,24 @@ class AcidBasslineGenerator extends BasePatternGenerator {
             w(() => this.generateSubPat([{value:2, weight:1}]), 0.5)
         ]
 
-        let offsetContentWeights = [
-            w(() =>0, 5),
-            w(() => this.getRandomOddInt(3,15), 1.5),
+        let rotationLenWeights = [
+            w(()=>4),
+            w(()=>3,0.5),
+            w(()=>1,0.5),
+            w(()=>this.getRandomInt(1,8),0.5)
+        ]
+
+        const changeSign = (num) => 0-num
+
+        let rotationContentWeights = [
+            w(() =>0, 3),
+            w(() => maybeApply(0.2,changeSign)(this.getRandomOddInt(3,15)), 1.5),
             w(() => this.getRandomEvenInt(2,16), 0.5),
         ]
         
         let euclidFills = this.generateSubPat(fillLenWeights, fillContentWeights)
         euclidFills = this.compressSequence(euclidFills)
-        let euclidRotations = this.generateSubPat(fillLenWeights, offsetContentWeights)
+        let euclidRotations = this.generateSubPat(rotationLenWeights, rotationContentWeights)
         euclidRotations = this.compressSequence(euclidRotations)
         return `"t(${euclidFills},16,${euclidRotations})"`
     }
