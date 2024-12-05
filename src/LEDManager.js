@@ -1,11 +1,22 @@
 // src/LEDManager.js
 
+const MIDIManager = require("./MIDIManager");
+
 class LEDManager {
   constructor(midiManager, stateManager) {
     this.midiManager = midiManager;
     this.stateManager = stateManager;
     this.rowMapping = [0, 16, 32, 48, 64, 80, 96, 112]; // Launchpad rows
     this.ledColors = { off: 0, on: 13, active: 63, modified: 60 };
+    this.automapRow = [104,105,106,107,108,109,110,111]
+  }
+
+  updateAutomapLEDs(){
+    const modifierButtons = this.stateManager.getCurrentlyActiveModifierButtons();
+
+    for(let i=0;i<Object.keys(modifierButtons).length;i++) {
+      this.midiManager.setLED(this.automapRow[i+4],modifierButtons[parseInt(i+1)] ? 63 : 0,true)
+    }
   }
 
   updateRowLEDs(row, sceneCode) {

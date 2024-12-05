@@ -37,8 +37,8 @@ class MIDIManager {
   }
 
   // Set LED state for a specific button
-  setLED(note, color) {
-    this.sendMessage([144, note, color]);
+  setLED(note, color, sendCC = false) {
+    this.sendMessage([sendCC ? 176 : 144, note, color]);
   }
 
   // Clear all LEDs

@@ -11,7 +11,7 @@ class StateManager extends EventEmitter {
     this.scenes = {};
     this.modifiedClips = {};
     this.activeClips = Array(8).fill(null); // Active clips per track
-    this.state = { active_streams: {}, active_buttons: {} };
+    this.state = { active_streams: {}, active_buttons: {1: false, 2: false, 3: false, 4: false} };
 
     // Load file content and initialize state
     const fileContent = fs.readFileSync(this.filePath, 'utf-8');
@@ -121,6 +121,19 @@ class StateManager extends EventEmitter {
     this.emit('clipDeactivated', { track, previousActiveRow });
   }
 
+  reactivateAllCurrentlyPlayingClips(){
+    for(const stream in this.state.active_streams){
+      console.log(stream)
+    }
+  }
+
+  muteAllClips(){
+    for(let i=0;i<8;i++)
+    {
+      this.deactivateClip(i);
+    }
+  }
+
   getActiveClips() {
     return this.activeClips;
   }
@@ -139,11 +152,15 @@ class StateManager extends EventEmitter {
   modifyScene(sceneCode, activeClip = null) {
     const lines = sceneCode.split('\n');
     const clipRegex = /^\s*(d\d+)\s*\$/; // Regex to detect clip start
-    const buttonStates = this.state.active_buttons; // Fetch active button states
+    const sceneRegex = /^-- scene \d+/i; // Regex to detect new scenes
+    const buttonStates = this.state.active_buttons; // Active button states
   
+    let isInActiveClip = false;
+    let isInOtherClip = false;
     let currentClip = null;
   
     const modifiedLines = lines.map((line) => {
+
       // Check for button-related comments
       const buttonMatch = line.match(/-- button (\d+)/);
       if (buttonMatch) {
@@ -153,24 +170,40 @@ class StateManager extends EventEmitter {
         }
       }
   
-      // Check if the line starts a clip
+      // Check for a new scene
+      if (sceneRegex.test(line)) {
+        isInActiveClip = false;
+        isInOtherClip = false;
+        currentClip = null;
+        return line; // Keep scene header lines
+      }
+  
+      // Check if the line starts a new clip
       const clipMatch = line.match(clipRegex);
       if (clipMatch) {
         currentClip = clipMatch[1];
-        if (activeClip && currentClip === activeClip) {
-          return line; // Keep active clip
-        } else if (buttonStates[currentClip] === false) {
-          return `--${line}`; // Comment out inactive clip's first line
+  
+        if (currentClip === activeClip || activeClip === null) {
+          isInActiveClip = true;
+          isInOtherClip = false;
+          return line; // Keep active clip or all clips for scene launch
+        } else {
+          isInActiveClip = false;
+          isInOtherClip = true;
+          return `--${line}`; // Comment out the first line of inactive clips
         }
-        return line; // Leave unrelated clips untouched
       }
   
-      // Handle lines belonging to the current clip
-      if (currentClip && buttonStates[currentClip] === false) {
-        return `--${line}`; // Comment out multi-line clips if inactive
+      // Handle lines within the currently active or inactive clip
+      if (isInActiveClip) {
+        return line; // Keep lines for the active clip
       }
   
-      // Default case: return line unchanged
+      if (isInOtherClip) {
+        return `--${line}`; // Comment out lines for inactive clips
+      }
+  
+      // Default: Keep lines unrelated to clips unless tied to an inactive button
       return line;
     });
   
@@ -182,6 +215,7 @@ class StateManager extends EventEmitter {
   launchScene(row) {
     const sceneKey = row + 1;
     const sceneCode = this.scenes[sceneKey];
+    console.log(sceneCode)
   
     if (!sceneCode) {
       console.log(`No scene found for row ${sceneKey}`);
@@ -276,6 +310,24 @@ class StateManager extends EventEmitter {
 
     return finalLines.join('\n').trim();
   }
+
+  setModifierButtonState(button, state) {
+    this.state.active_buttons[button] = state;
+  
+    // Emit an event if needed (optional)
+    this.emit('modifierButtonChanged', { button, state });
+  }
+
+
+    getModifierButtonState(button) {
+      return this.state.active_buttons[button] || false;
+    }
+
+    getCurrentlyActiveModifierButtons(){
+      return this.state.active_buttons
+    }
+
+  
 
   writeSceneToFile(sceneKey, updatedSceneCode) {
     const updatedScenes = { ...this.scenes };

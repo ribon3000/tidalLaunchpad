@@ -34,6 +34,7 @@ ledManager.updateAllLEDs();
 state.on('fileChanged', () => {
   console.log('File changed, updating LEDs...');
   ledManager.updateAllLEDs();
+  ledManager.updateAutomapLEDs();
 });
 
 state.on('clipActivated', ({ row, track, previousActiveRow }) => {
