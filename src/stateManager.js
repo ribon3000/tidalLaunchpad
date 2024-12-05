@@ -1,25 +1,25 @@
 // src/StateManager.js
 const EventEmitter = require('events');
-const FileHandler = require('./FileHandler');
+const fs = require('fs');
 const TidalParser = require('./TidalParser');
 
 class StateManager extends EventEmitter {
   constructor(tidalManager, filePath) {
     super();
     this.tidalManager = tidalManager;
-    this.fileHandler = new FileHandler(filePath);
+    this.filePath = filePath;
     this.scenes = {};
     this.modifiedClips = {};
     this.activeClips = Array(8).fill(null); // Active clips per track
+    this.state = { active_streams: {}, active_buttons: {} };
 
-    this.fileHandler.on('fileChanged', (fileContent) => {
-      this.reloadFile(fileContent);
-      this.emit('fileChanged', this.scenes);
-    });
-
-    this.reloadFile(this.fileHandler.readFile());
+    // Load file content and initialize state
+    const fileContent = fs.readFileSync(this.filePath, 'utf-8');
+    this.reloadFile(fileContent);
+    this.loadMetadata(fileContent);
   }
 
+  // Reload scenes from the file
   reloadFile(fileContent) {
     const oldScenes = this.scenes;
     this.scenes = TidalParser.parseScenes(fileContent);
@@ -45,8 +45,36 @@ class StateManager extends EventEmitter {
         });
       }
     });
+
+    this.emit('fileChanged', this.scenes);
   }
 
+  // Load metadata (state) from the file
+  loadMetadata(fileContent) {
+    const metadataMatch = fileContent.match(/-- metadata:\s*(\{.*\})/);
+    if (metadataMatch) {
+      try {
+        this.state = JSON.parse(metadataMatch[1]);
+        console.log('Loaded state from metadata:', this.state);
+      } catch (error) {
+        console.error('Error parsing metadata:', error);
+      }
+    } else {
+      console.log('No metadata found. Using default state.');
+    }
+  }
+
+  // Save metadata (state) to the file
+  saveMetadata() {
+    const fileContent = fs.readFileSync(this.filePath, 'utf-8');
+    const strippedContent = fileContent.replace(/-- metadata:\s*\{.*\}/, '').trim();
+
+    const metadataString = `-- metadata: ${JSON.stringify(this.state, null, 2)}`;
+    fs.writeFileSync(this.filePath, `${strippedContent}\n\n${metadataString}`);
+    console.log('State saved to metadata:', this.state);
+  }
+
+  // Scene and clip management methods
   getScenes() {
     return this.scenes;
   }
@@ -75,23 +103,23 @@ class StateManager extends EventEmitter {
   setActiveClip(row, track) {
     const previousActiveRow = this.activeClips[track];
     this.activeClips[track] = row;
-
+    this.state.active_streams[`d${track + 1}`] = row !== null ? `scene ${row + 1}` : 'off';
     return previousActiveRow;
   }
 
   deactivateClip(track) {
     const previousActiveRow = this.activeClips[track];
     this.activeClips[track] = null;
-  
+    this.state.active_streams[`d${track + 1}`] = 'off';
+
     // Send the mute command to TidalCycles
     const clipNumber = track + 1;
     const muteCommand = `d${clipNumber} $ silence`;
     this.tidalManager.sendCommand(muteCommand);
-  
+
     // Emit an event to update LEDs
     this.emit('clipDeactivated', { track, previousActiveRow });
   }
-  
 
   getActiveClips() {
     return this.activeClips;
@@ -103,6 +131,7 @@ class StateManager extends EventEmitter {
     this.tidalManager.sendCommand(`:{\n${modifiedCode}\n:}`);
 
     this.clearModifiedClips(row, track);
+    this.state.active_streams[`d${track + 1}`] = `scene ${row + 1}`;
 
     this.emit('clipActivated', { row, track, previousActiveRow: this.activeClips[track] });
   }
@@ -162,6 +191,7 @@ class StateManager extends EventEmitter {
     Object.keys(clips).forEach((clipKey) => {
       const trackIndex = parseInt(clipKey.slice(1), 10) - 1;
       this.activeClips[trackIndex] = row;
+      this.state.active_streams[clipKey] = `scene ${row + 1}`;
     });
 
     this.clearModifiedClips(row);
@@ -234,6 +264,7 @@ class StateManager extends EventEmitter {
     const updatedScenes = { ...this.scenes };
     updatedScenes[sceneKey] = updatedSceneCode;
 
+    // this.saveMetadata(); // Save metadata when writing scenes
     this.fileHandler.writeFile(updatedScenes);
   }
 }
