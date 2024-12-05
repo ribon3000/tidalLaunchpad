@@ -6,6 +6,11 @@ const midi = require('midi');
 class CLIManager {
   constructor() {
     this.argv = yargs(hideBin(process.argv))
+      .option('file-path', {
+        alias: 'f',
+        type: 'string',
+        description: 'Tidal Code file to work with'
+      })
       .option('list-ports', {
         alias: 'l',
         type: 'boolean',
@@ -49,6 +54,10 @@ class CLIManager {
       console.error('Error: You must specify both --input-port and --output-port.');
       process.exit(1);
     }
+  }
+
+  getFilePath() {
+    return this.argv['file-path']
   }
 
   getInputPort() {

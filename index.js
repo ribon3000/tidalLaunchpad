@@ -15,7 +15,7 @@ const midiManager = new MIDIManager(cli.getInputPort(), cli.getOutputPort());
 
 // File paths
 const tidalBootFile = './BootTidal.hs';
-const tidalCodeFile = './playback.hs';
+const tidalCodeFile = cli.getFilePath() ? cli.getFilePath() : './playback.hs';
 
 // Initialize Tidal, State, and LED managers
 const tidal = new TidalManager(tidalBootFile);
