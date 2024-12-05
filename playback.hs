@@ -1,4 +1,4 @@
--- section 1
+-- scene 1
 do
   hush
   d1 $ outside 4 loopFirst $ sew "0@3 1@3"
@@ -11,7 +11,7 @@ do
     (stack [s "{~ ~ ~ t ~ ~ ~}%16" # amp 0.30481525695995004, s "{~ t}%16"])
     (stack [s "{t ~ ~ ~}%16" # amp 0.47059760722362715, s "{~ ~ ~ ~ ~ ~ t}%16"]) # n 36
 
--- section 2
+-- scene 2
 do
   hush
   let val1 = pF "val1"
@@ -26,7 +26,7 @@ do
   d3 $ s "sdklfjd" # n ("[55,62,69,76,83]" + "<0 0 2 5>")
   d4 $ outside 8 (loopFirst) $ fast 1 $ struct ("t({11 11 9 5 7}%16,16,{0 0 -1}%8)") $ s "sdfhk" # n (43 + "{0 0 0 12 0 -12 0}%16" + "0 5 -2 7") # legato "{1 0.2 2 1 1 3 0.5}%16" # amp "{0.2 0.2 1 0.2 0.2}%4" # val1 "{0 1 0 0.25 0.5}%8" # val2 (segment 16 $ rand)
 
--- section 3
+-- scene 3
 do
     hush
     let val1 = pF "val1"
@@ -44,34 +44,34 @@ do
     d3 $ s "bd/4" # n ("[60,67,75]" + (slow 4 "<0 5 -2 7>" - 12))
     d4 $ fast 4 $ degradeBy 0.2 $ bite 8 (slow 2 $ (markovPat 8 1 [[3,5,2,1], [4,4,2,1], [0,1,0,1],[3,2,2,0]]) + "<0 1>") $ s "sdhjh(7,8,<0 -4>)" # n (30 + ((run 8) * 5)) # amp "{0.4 2 0.3}%8" # legato "{0.2 1 0.3 2 1 1}%8" # val1 (rand) # val2 (1 <~ rand)
 
--- section 4
+-- scene 4
 do
   hush
   d1 $ s "bd*8" # amp 0.2
   d3 $ s "bd/2" # n ("[60,67,75]" + (slow 4 "<0 5 -2 2 7>" - 24))
 
--- section 5
+-- scene 5
 do
   hush
   d2 $ outside 7 loopFirst $ sew "0@4 1@4"
     (stack [s "{t ~ ~ ~}%16" # amp 0.24592306875027478, s "{~ ~ t}%16"])
     (stack [s "{t ~}%16" # amp 0.5191145694531487, s "{~ t ~ ~ ~}%16"]) # n 36
 
--- section 6
+-- scene 6
 do
   hush      
   d2 $ outside 4 loopFirst $ sew "0@5 1@4"
     (stack [s "{~ t ~}%16" # amp 0.3427267873623736, s "{~ t ~ ~ ~ ~ ~}%16"])
     (stack [s "{t ~}%16" # amp 0.61361717931587, s "{~ t ~}%16"]) # n 36
 
--- section 7
+-- scene 7
 do
   hush
   d2 $  outside 2 loopFirst $ sew "1!3 0@5" 
       (stack [s "{~ ~ ~ t ~}%16" # amp 0.4849015719889291, s "{~ ~ ~ t ~ ~ ~ ~}%16"]) 
       (stack [s "{~ ~ ~ t}%16" # amp 0.5135587075762597, s "{~ ~ ~ ~ t ~}%16"]) # n 36
 
--- section 8
+-- scene 8
 do
   hush
   d2 $ outside 2 loopFirst $ sew "0@4 1@2"

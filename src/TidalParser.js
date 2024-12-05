@@ -5,7 +5,7 @@ class TidalParser {
     let currentScene = null;
 
     fileContent.split('\n').forEach((line) => {
-      const sceneMatch = line.match(/-- section (\d+)/i);
+      const sceneMatch = line.match(/-- scene (\d+)/i);
       if (sceneMatch) {
         currentScene = sceneMatch[1];
         scenes[currentScene] = [];
