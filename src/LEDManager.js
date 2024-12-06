@@ -12,7 +12,7 @@ class LEDManager {
   }
 
   updateAutomapLEDs(){
-    const modifierButtons = this.stateManager.getCurrentlyActiveModifierButtons();
+    const modifierButtons = this.stateManager.state.activeButtons;
 
     for(let i=0;i<Object.keys(modifierButtons).length;i++) {
       this.midiManager.setLED(this.automapRow[i+4],modifierButtons[parseInt(i+1)] ? 63 : 0,true)

@@ -70,6 +70,71 @@ class TidalParser {
 
     return modified;
   }
+
+
+  static modifyScene(buttonStates, sceneCode, activeClip = null) {
+    const lines = sceneCode.split('\n');
+    const clipRegex = /^\s*(d\d+)\s*\$/; // Regex to detect clip start
+    const sceneRegex = /^-- scene \d+/i; // Regex to detect new scenes
+  
+    let isInActiveClip = false;
+    let isInOtherClip = false;
+    let currentClip = null;
+  
+    const modifiedLines = lines.map((line) => {
+      // Comment out any `hush` lines when an individual clip is active
+      if (activeClip && line.trim().startsWith('hush')) {
+        return `--${line}`;
+      }
+  
+      // Check for button-related comments
+      const buttonMatch = line.match(/-- button (\d+)/);
+      if (buttonMatch) {
+        const button = parseInt(buttonMatch[1], 10);
+        if (buttonStates[button] === false) {
+          return `--${line}`; // Comment out lines associated with inactive buttons
+        }
+      }
+  
+      // Check for a new scene
+      if (sceneRegex.test(line)) {
+        isInActiveClip = false;
+        isInOtherClip = false;
+        currentClip = null;
+        return line; // Keep scene header lines
+      }
+  
+      // Check if the line starts a new clip
+      const clipMatch = line.match(clipRegex);
+      if (clipMatch) {
+        currentClip = clipMatch[1];
+  
+        if (currentClip === activeClip || activeClip === null) {
+          isInActiveClip = true;
+          isInOtherClip = false;
+          return line; // Keep active clip or all clips for scene launch
+        } else {
+          isInActiveClip = false;
+          isInOtherClip = true;
+          return `--${line}`; // Comment out the first line of inactive clips
+        }
+      }
+  
+      // Handle lines within the currently active or inactive clip
+      if (isInActiveClip) {
+        return line; // Keep lines for the active clip
+      }
+  
+      if (isInOtherClip) {
+        return `--${line}`; // Comment out lines for inactive clips
+      }
+  
+      // Default: Keep lines unrelated to clips unless tied to an inactive button
+      return line;
+    });
+  
+    return modifiedLines.join('\n');
+  }
 }
 
 module.exports = TidalParser;

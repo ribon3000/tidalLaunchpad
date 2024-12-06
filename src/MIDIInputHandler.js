@@ -1,9 +1,8 @@
 class MIDIInputHandler {
-  constructor(midiManager, stateManager, ledManager, patternGenerator) {
+  constructor(midiManager, stateManager, ledManager) {
     this.midiManager = midiManager;
     this.stateManager = stateManager;
     this.ledManager = ledManager;
-    this.patternGenerator = patternGenerator;
 
     this.modifierButtons = [108, 109, 110, 111]; // Define the last 4 Automap buttons as modifier buttons
 

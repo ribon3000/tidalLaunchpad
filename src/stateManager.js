@@ -14,9 +14,12 @@ class StateManager extends EventEmitter {
     this.state = { active_streams: {}, active_buttons: {1: false, 2: false, 3: false, 4: false} };
 
     // Load file content and initialize state
-    
+    fs.watch(this.filePath, () => {
+      console.log(`File ${this.filePath} changed, reloading...`);
+      this.reloadFile(filePath)
+    });
+
     this.reloadFile(this.filePath);
-    this.loadMetadata(this.filePath);
   }
 
   // Reload scenes from the file
@@ -48,32 +51,6 @@ class StateManager extends EventEmitter {
     });
 
     this.emit('fileChanged', this.scenes);
-  }
-
-  // Load metadata (state) from the file
-  loadMetadata(filePath) {
-    const fileContent = fs.readFileSync(filePath, 'utf-8');
-    const metadataMatch = fileContent.match(/-- metadata:\s*(\{.*\})/);
-    if (metadataMatch) {
-      try {
-        this.state = JSON.parse(metadataMatch[1]);
-        console.log('Loaded state from metadata:', this.state);
-      } catch (error) {
-        console.error('Error parsing metadata:', error);
-      }
-    } else {
-      console.log('No metadata found. Using default state.');
-    }
-  }
-
-  // Save metadata (state) to the file
-  saveMetadata() {
-    const fileContent = fs.readFileSync(this.filePath, 'utf-8');
-    const strippedContent = fileContent.replace(/-- metadata:\s*\{.*\}/, '').trim();
-
-    const metadataString = `-- metadata: ${JSON.stringify(this.state, null, 2)}`;
-    fs.writeFileSync(this.filePath, `${strippedContent}\n\n${metadataString}`);
-    console.log('State saved to metadata:', this.state);
   }
 
   // Scene and clip management methods
@@ -123,12 +100,6 @@ class StateManager extends EventEmitter {
     this.emit('clipDeactivated', { track, previousActiveRow });
   }
 
-  reactivateAllCurrentlyPlayingClips(){
-    for(const stream in this.state.active_streams){
-      console.log(stream)
-    }
-  }
-
   muteAllClips(){
     for(let i=0;i<8;i++)
     {
@@ -141,7 +112,7 @@ class StateManager extends EventEmitter {
   }
 
   activateClip(row, track, clipKey, sceneCode) {
-    const modifiedCode = this.modifyScene(sceneCode, clipKey);
+    const modifiedCode = TidalParser.modifyScene(this.state.active_buttons, sceneCode, clipKey);
 
     this.tidalManager.sendCommand(`:{\n${modifiedCode}\n:}`);
 
@@ -149,71 +120,6 @@ class StateManager extends EventEmitter {
     this.state.active_streams[`d${track + 1}`] = `scene ${row + 1}`;
 
     this.emit('clipActivated', { row, track, previousActiveRow: this.activeClips[track] });
-  }
-
-  modifyScene(sceneCode, activeClip = null) {
-    const lines = sceneCode.split('\n');
-    const clipRegex = /^\s*(d\d+)\s*\$/; // Regex to detect clip start
-    const sceneRegex = /^-- scene \d+/i; // Regex to detect new scenes
-    const buttonStates = this.state.active_buttons; // Active button states
-  
-    let isInActiveClip = false;
-    let isInOtherClip = false;
-    let currentClip = null;
-  
-    const modifiedLines = lines.map((line) => {
-      // Comment out any `hush` lines when an individual clip is active
-      if (activeClip && line.trim().startsWith('hush')) {
-        return `--${line}`;
-      }
-  
-      // Check for button-related comments
-      const buttonMatch = line.match(/-- button (\d+)/);
-      if (buttonMatch) {
-        const button = parseInt(buttonMatch[1], 10);
-        if (buttonStates[button] === false) {
-          return `--${line}`; // Comment out lines associated with inactive buttons
-        }
-      }
-  
-      // Check for a new scene
-      if (sceneRegex.test(line)) {
-        isInActiveClip = false;
-        isInOtherClip = false;
-        currentClip = null;
-        return line; // Keep scene header lines
-      }
-  
-      // Check if the line starts a new clip
-      const clipMatch = line.match(clipRegex);
-      if (clipMatch) {
-        currentClip = clipMatch[1];
-  
-        if (currentClip === activeClip || activeClip === null) {
-          isInActiveClip = true;
-          isInOtherClip = false;
-          return line; // Keep active clip or all clips for scene launch
-        } else {
-          isInActiveClip = false;
-          isInOtherClip = true;
-          return `--${line}`; // Comment out the first line of inactive clips
-        }
-      }
-  
-      // Handle lines within the currently active or inactive clip
-      if (isInActiveClip) {
-        return line; // Keep lines for the active clip
-      }
-  
-      if (isInOtherClip) {
-        return `--${line}`; // Comment out lines for inactive clips
-      }
-  
-      // Default: Keep lines unrelated to clips unless tied to an inactive button
-      return line;
-    });
-  
-    return modifiedLines.join('\n');
   }
   
 
@@ -228,7 +134,7 @@ class StateManager extends EventEmitter {
     }
   
     // Modify the scene to activate the desired clips
-    const modifiedScene = this.modifyScene(sceneCode);
+    const modifiedScene = TidalParser.modifyScene(this.state.active_buttons, sceneCode);
   
     // Send the modified scene code to TidalCycles
     this.tidalManager.sendCommand(`:{\n${modifiedScene}\n:}`);
@@ -257,65 +163,6 @@ class StateManager extends EventEmitter {
     });
   }
   
-  
-
-  updateClipInScene(sceneCode, clipKey, newPattern) {
-    const lines = sceneCode.split('\n');
-    const clipRegex = new RegExp(`^\\s*${clipKey}\\s*\\$`);
-    let updated = false;
-    const updatedLines = [];
-    let skipLines = false;
-
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-
-      if (clipRegex.test(line)) {
-        updated = true;
-        skipLines = true;
-
-        const newPatternLines = newPattern.trim().split('\n');
-        newPatternLines[0] = `  ${clipKey} $ ${newPatternLines[0].trim()}`;
-
-        for (let j = 1; j < newPatternLines.length; j++) {
-          newPatternLines[j] = '    ' + newPatternLines[j].trim();
-        }
-
-        updatedLines.push(...newPatternLines);
-        continue;
-      }
-
-      if (skipLines) {
-        const isAnotherClip = /^\s*(d[1-8])\s*\$/.test(line);
-        if (isAnotherClip || line.trim() === '' || /^-- section/.test(line)) {
-          skipLines = false;
-        } else {
-          continue;
-        }
-      }
-      updatedLines.push(line);
-    }
-
-    if (!updated) {
-      const newPatternLines = newPattern.trim().split('\n');
-      newPatternLines[0] = `  ${clipKey} $ ${newPatternLines[0].trim()}`;
-
-      for (let j = 1; j < newPatternLines.length; j++) {
-        newPatternLines[j] = '    ' + newPatternLines[j].trim();
-      }
-
-      updatedLines.push(...newPatternLines);
-    }
-
-    const finalLines = updatedLines.filter((line, index, arr) => {
-      if (line.trim() === '' && arr[index - 1]?.trim() === '') {
-        return false;
-      }
-      return true;
-    });
-
-    return finalLines.join('\n').trim();
-  }
-
   setModifierButtonState(button, state) {
     this.state.active_buttons[button] = state;
   
@@ -338,7 +185,6 @@ class StateManager extends EventEmitter {
     const updatedScenes = { ...this.scenes };
     updatedScenes[sceneKey] = updatedSceneCode;
 
-    // this.saveMetadata(); // Save metadata when writing scenes
     this.fileHandler.writeFile(updatedScenes);
   }
 }
