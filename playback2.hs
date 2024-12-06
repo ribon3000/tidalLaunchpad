@@ -17,9 +17,13 @@ do
   hush
   let val1 = pF "val1"
       val2 = pF "val2"
-  d2 $ stack [
+  d2 $ id
+    $ outside 4 (loopAt "0.5 [0.25 4 8 17] 10") -- button 4
+    $ fast 2 -- button 3
+    $ (sometimesBy 0.6 (ply 4)) $ (degrade . slow 2) -- button 2
+    $ stack [
               distrib ["9",16,"3 7"] $ s "hdh" # n "36", -- button 1
-              n "46(3,8)" # s "hvh",
+              -- n "46(3,8)" # s "hvh",
               n "39(2,4,1)" # s "hhd",
               n "38(<0 0 0 1>,16,1)" # s "hsh",
               distrib ["9 11",16,"<5 3> 9"] $ n "42" # s "hrh"

@@ -14,13 +14,14 @@ class StateManager extends EventEmitter {
     this.state = { active_streams: {}, active_buttons: {1: false, 2: false, 3: false, 4: false} };
 
     // Load file content and initialize state
-    const fileContent = fs.readFileSync(this.filePath, 'utf-8');
-    this.reloadFile(fileContent);
-    this.loadMetadata(fileContent);
+    
+    this.reloadFile(this.filePath);
+    this.loadMetadata(this.filePath);
   }
 
   // Reload scenes from the file
-  reloadFile(fileContent) {
+  reloadFile(filePath) {
+    const fileContent = fs.readFileSync(filePath, 'utf-8');
     const oldScenes = this.scenes;
     this.scenes = TidalParser.parseScenes(fileContent);
 
@@ -50,7 +51,8 @@ class StateManager extends EventEmitter {
   }
 
   // Load metadata (state) from the file
-  loadMetadata(fileContent) {
+  loadMetadata(filePath) {
+    const fileContent = fs.readFileSync(filePath, 'utf-8');
     const metadataMatch = fileContent.match(/-- metadata:\s*(\{.*\})/);
     if (metadataMatch) {
       try {
@@ -160,7 +162,11 @@ class StateManager extends EventEmitter {
     let currentClip = null;
   
     const modifiedLines = lines.map((line) => {
-
+      // Comment out any `hush` lines when an individual clip is active
+      if (activeClip && line.trim().startsWith('hush')) {
+        return `--${line}`;
+      }
+  
       // Check for button-related comments
       const buttonMatch = line.match(/-- button (\d+)/);
       if (buttonMatch) {
@@ -209,7 +215,6 @@ class StateManager extends EventEmitter {
   
     return modifiedLines.join('\n');
   }
-  
   
 
   launchScene(row) {

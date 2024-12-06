@@ -39,17 +39,32 @@ class MIDIInputHandler {
 
   handleModifierButton(button) {
     const buttonIndex = this.modifierButtons.indexOf(button) + 1;
-
+  
     // Toggle the state of the modifier button
     const currentState = this.stateManager.getModifierButtonState(buttonIndex);
     const newState = !currentState;
     this.stateManager.setModifierButtonState(buttonIndex, newState);
-
+  
     console.log(`Modifier button ${buttonIndex} ${newState ? 'activated' : 'deactivated'}`);
-
-    this.ledManager.updateAutomapLEDs()
-    this.stateManager.reactivateAllCurrentlyPlayingClips()
+  
+    // Update LEDs
+    this.ledManager.updateAutomapLEDs();
+  
+    // Resend currently playing clips with updated modifiers
+    const activeClips = this.stateManager.getActiveClips();
+    activeClips.forEach((row, track) => {
+      if (row !== null) {
+        const sceneKey = row + 1;
+        const sceneCode = this.stateManager.getScenes()[sceneKey];
+        if (sceneCode) {
+          const clipKey = `d${track + 1}`;
+          const modifiedCode = this.stateManager.modifyScene(sceneCode, clipKey);
+          this.stateManager.activateClip(row, track, clipKey, modifiedCode);
+        }
+      }
+    });
   }
+  
 
   handleAutomapButton(button, isPressed) {
     console.log(`Automap button ${button} ${isPressed ? 'pressed' : 'released'}`);
