@@ -6,6 +6,7 @@ const TidalParser = require('./TidalParser');
 class StateManager extends EventEmitter {
   constructor(tidalManager, filePath, ledManager) {
     super();
+    this.currentPage = 0;
     this.tidalManager = tidalManager;
     this.filePath = filePath;
     this.ledManager = ledManager;
@@ -23,6 +24,12 @@ class StateManager extends EventEmitter {
     });
 
     this.reloadFile(this.filePath);
+  }
+
+  switchPage(page){
+    this.currentPage = page;
+    //this.ledManager.updatePageLEDs(page);
+    this.updateAllLEDs()
   }
 
   reloadFile(filePath) {
@@ -56,7 +63,7 @@ class StateManager extends EventEmitter {
   }
 
   updateAllLEDs() {
-    this.ledManager.updateAllLEDs(this.scenes, this.activeClips, this.modifiedClips, this.state.active_buttons);
+    this.ledManager.updateAllLEDs(this.scenes, this.activeClips, this.modifiedClips, this.state.active_buttons, this.currentPage);
   }
 
   // Scene and clip management methods

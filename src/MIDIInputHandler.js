@@ -27,8 +27,8 @@ class MIDIInputHandler {
         this.stateManager.launchScene(event.row);
         break;
 
-      case 'otherAutomap':
-        console.log(`Automap button ${event.button} ${event.pressed ? 'pressed' : 'released'}`);
+      case 'pageButton':
+        this.stateManager.switchPage(event.key);
         break;
 
       default:

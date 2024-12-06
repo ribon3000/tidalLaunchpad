@@ -8,17 +8,19 @@ class LaunchpadMiniMk2Mapping extends ControllerMapping {
       this.automapRow = [104,105,106,107,108,109,110,111];
       this.colors = { off: 0, on: 13, active: 63, modified: 60 };
       this.modifierButtons = [108, 109, 110, 111]; 
+      this.pageButtons = [104, 105, 106, 107];
     }
   
     parseMessage(status, key, velocity) {
       // Check if it's a modifier button
       if (status === 176 && this.automapRow.includes(key)) {
         const isModifier = this.modifierButtons.indexOf(key);
+        const isPageButton = this.pageButtons.indexOf(key);
         if (isModifier > -1) {
           return { type: 'modifierPress', index: isModifier + 1, active: velocity > 0 };
-        } else {
-          // Possibly an automap button press not a modifier
-          return { type: 'otherAutomap', button: key, pressed: velocity > 0 };
+        } else if (isPageButton > -1) {
+          // Page selection buttons, start at 104
+          return { type: 'pageButton', key: key - 104, pressed: velocity > 0 };
         }
       }
   
@@ -43,6 +45,11 @@ class LaunchpadMiniMk2Mapping extends ControllerMapping {
     getModifierLEDAddress(index) {
       // index 1-4 mapped to automapRow starting at position 4
       return this.automapRow[index+3]; 
+    }
+
+    getPageLEDAddress(index)
+    {
+      return this.pageButtons[index];
     }
   
     getSceneLaunchLEDAddress(row) {

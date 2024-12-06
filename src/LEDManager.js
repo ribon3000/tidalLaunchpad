@@ -16,6 +16,15 @@ class LEDManager {
     }
   }
 
+  updatePageLEDs(activePage){
+    for (let i = 0; i < 4; i++) {
+      const colorName = i == activePage ? 'active' : 'off';
+      const address = this.mapping.getPageLEDAddress(i);
+      const colorVal = this.mapping.getLEDColor(colorName);
+      this.setLED(address, colorVal, true);
+    }
+  }
+
   updateRowLEDs(row, sceneCode, modifiedClips, activeClips) {
     // sceneCode: string code for the scene
     // modifiedClips: array of modified clip indexes for this row
@@ -59,15 +68,20 @@ class LEDManager {
     }
   }
 
-  updateAllLEDs(scenes, activeClips, modifiedClipsMap, modifierButtons) {
+  updateAllLEDs(scenes, activeClips, modifiedClipsMap, modifierButtons, activePage) {
     this.clearLEDs();
-    const rows = Object.keys(scenes).map(k => parseInt(k,10)-1).filter(r => r >=0);
-    rows.forEach((row) => {
-      const sceneCode = scenes[row + 1];
-      const modifiedClips = modifiedClipsMap[row] ? Array.from(modifiedClipsMap[row]) : [];
-      this.updateRowLEDs(row, sceneCode, modifiedClips, activeClips);
-    });
+    if(activePage == 0){
+      const rows = Object.keys(scenes).map(k => parseInt(k,10)-1).filter(r => r >=0);
+      rows.forEach((row) => {
+        const sceneCode = scenes[row + 1];
+        const modifiedClips = modifiedClipsMap[row] ? Array.from(modifiedClipsMap[row]) : [];
+        this.updateRowLEDs(row, sceneCode, modifiedClips, activeClips);
+      });
+    } else {
+      //keep LEDS clear for now 
+    }
     this.updateAutomapLEDs(modifierButtons);
+    this.updatePageLEDs(activePage)
   }
 
   // Utility method to parse clips from code
