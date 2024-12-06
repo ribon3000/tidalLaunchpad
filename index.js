@@ -1,30 +1,26 @@
-// index.js
 const CLIManager = require('./src/CLIManager');
 const MIDIManager = require('./src/MIDIManager');
 const TidalManager = require('./src/TidalManager');
 const StateManager = require('./src/StateManager');
 const LEDManager = require('./src/LEDManager');
 const MIDIInputHandler = require('./src/MIDIInputHandler.js');
+const LaunchpadMiniMk2Mapping = require('./src/mappings/LaunchpadMiniMk2Mapping'); // example path
 
-// Initialize CLI Manager and parse arguments
 const cli = new CLIManager();
-
-// Initialize MIDI Manager with specified ports
 const midiManager = new MIDIManager(cli.getInputPort(), cli.getOutputPort());
 
-// File paths & handler
+// Select a mapping based on some CLI argument or default
+const mapping = new LaunchpadMiniMk2Mapping();
+
 const tidalBootFile = './BootTidal.hs';
 const tidalCodeFile = cli.getFilePath() ? cli.getFilePath() : './playback.hs';
 
-// Initialize Tidal, State, and LED managers
 const tidal = new TidalManager(tidalBootFile);
 tidal.start();
 
-const ledManager = new LEDManager(midiManager);
+const ledManager = new LEDManager(midiManager, mapping);
 const state = new StateManager(tidal, tidalCodeFile, ledManager);
 
-// Initialize MIDI Input Handler to manage MIDI interactions
-new MIDIInputHandler(midiManager, state);
+new MIDIInputHandler(midiManager, state, mapping);
 
-// Initial LED setup handled by StateManager after loading scenes
 state.updateAllLEDs();

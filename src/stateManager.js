@@ -174,9 +174,10 @@ class StateManager extends EventEmitter {
   }
 
   setModifierButtonState(button, state) {
-    this.state.active_buttons[button] = state;
+    this.state.active_buttons[button] = state ? !this.state.active_buttons[button] : this.state.active_buttons[button];
     // Update automap LEDs after changing modifier states
-    this.updateAllLEDs();
+    this.ledManager.updateAutomapLEDs(this.state.active_buttons)
+    //this.updateAllLEDs();
 
     // Resend currently playing clips with updated modifiers
     const activeClips = this.getActiveClips();

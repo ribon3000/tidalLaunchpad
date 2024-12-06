@@ -13,4 +13,4 @@ package-lock.json
 parseOSC.js
 src/TidalCodeGen/RhythmicPatternGenerator.js
 *.tosc
-/src/TidalCodeGen/*
+# /src/TidalCodeGen/*

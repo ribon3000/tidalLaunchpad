@@ -1,77 +1,64 @@
 // src/MIDIInputHandler.js
 class MIDIInputHandler {
-  constructor(midiManager, stateManager) {
+  constructor(midiManager, stateManager, mapping) {
     this.midiManager = midiManager;
     this.stateManager = stateManager;
+    this.mapping = mapping;
 
-    this.modifierButtons = [108, 109, 110, 111]; // Define the last 4 Automap buttons as modifier buttons
-
-    midiManager.addListener(this.handleMessage.bind(this));
+    midiManager.addListener(this.handleRawMessage.bind(this));
   }
 
-  handleMessage(message) {
+  handleRawMessage(message) {
     const [status, key, velocity] = message;
+    const event = this.mapping.parseMessage(status, key, velocity);
 
-    // Handle Automap button press
-    if (status === 176 && key >= 104 && key <= 111) {
-      if (this.modifierButtons.includes(key) && velocity > 0) {
-        this.handleModifierButton(key);
-      } else {
-        this.handleAutomapButton(key, velocity > 0);
-      }
+    if (!event) return;
+
+    switch (event.type) {
+      case 'modifierPress':
+        this.stateManager.setModifierButtonState(event.index, event.active);
+        break;
+
+      case 'clipPress':
+        this.handleClipPress(event.row, event.col);
+        break;
+
+      case 'sceneLaunch':
+        this.stateManager.launchScene(event.row);
+        break;
+
+      case 'otherAutomap':
+        console.log(`Automap button ${event.button} ${event.pressed ? 'pressed' : 'released'}`);
+        break;
+
+      default:
+        console.log(`Unknown event type: ${event.type}`);
+        break;
     }
-
-    // Handle Clip Button Press (Grid Button)
-    if (status === 144 && velocity > 0) {
-      const row = Math.floor(key / 16);
-      const col = key % 16;
-      if (col > 8) {
-        console.log('Invalid column: ' + col);
-        return;
-      }
-
-      console.log(`Grid button pressed: row ${row}, col ${col}`);
-      this.handleGridButtonPress(row, col);
-    }
   }
 
-  handleModifierButton(button) {
-    const buttonIndex = this.modifierButtons.indexOf(button) + 1;
-    const currentState = this.stateManager.getModifierButtonState(buttonIndex);
-    const newState = !currentState;
-    this.stateManager.setModifierButtonState(buttonIndex, newState);
-    console.log(`Modifier button ${buttonIndex} ${newState ? 'activated' : 'deactivated'}`);
-  }
-
-  handleAutomapButton(button, isPressed) {
-    console.log(`Automap button ${button} ${isPressed ? 'pressed' : 'released'}`);
-  }
-
-  handleGridButtonPress(row, col) {
+  handleClipPress(row, col) {
+    console.log(`${row}, ${col}`)
     const scenes = this.stateManager.getScenes();
     const sceneKey = row + 1;
     const sceneCode = scenes[sceneKey];
 
     if (!sceneCode) {
       console.log(`No scene found for row ${row + 1}, muting...`);
-      this.stateManager.muteAllClips();
+      this.stateManager.deactivateClip(col);
       return;
     }
 
-    if (col === 8) {
-      // Scene launch button
-      this.stateManager.launchScene(row);
-    } else {
-      const clipKey = `d${col + 1}`;
-      const clips = this.stateManager.parseClips(sceneCode);
+    // If the last column is reserved for scene launch in your mapping,
+    // event.type=clipPress will never be triggered for that column. 
+    // If it can, handle it here similarly to before:
+    const clipKey = `d${col + 1}`;
+    const clips = this.stateManager.parseClips(sceneCode);
 
-      if (clips.hasOwnProperty(clipKey)) {
-        // Activate clip and apply modifiers
-        this.stateManager.activateClip(row, col, clipKey, sceneCode);
-      } else {
-        // Mute clip
-        this.stateManager.deactivateClip(col);
-      }
+    if (clips.hasOwnProperty(clipKey)) {
+      this.stateManager.activateClip(row, col, clipKey, sceneCode);
+    } else {
+      this.stateManager.deactivateClip(col);
     }
   }
 }

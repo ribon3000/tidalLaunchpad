@@ -1,19 +1,18 @@
 // src/LEDManager.js
-
 class LEDManager {
-  constructor(midiManager) {
+  constructor(midiManager, mapping) {
     this.midiManager = midiManager;
-    this.rowMapping = [0, 16, 32, 48, 64, 80, 96, 112]; // Launchpad rows
-    this.ledColors = { off: 0, on: 13, active: 63, modified: 60 };
-    this.automapRow = [104,105,106,107,108,109,110,111];
+    this.mapping = mapping;
   }
 
   updateAutomapLEDs(modifierButtons) {
-    // modifierButtons: object with keys 1-4 and boolean values.
-    // We map these buttons onto the automapRow starting at index 4.
-    for (let i = 0; i < 4; i++) {
-      const state = modifierButtons[i+1] ? this.ledColors.active : this.ledColors.off;
-      this.setLED(this.automapRow[i+4], state, true);
+    // modifierButtons is an object like {1: true/false, 2: true/false, etc.}
+    for (let i = 1; i <= 4; i++) {
+      const active = modifierButtons[i];
+      const colorName = active ? 'active' : 'off';
+      const address = this.mapping.getModifierLEDAddress(i);
+      const colorVal = this.mapping.getLEDColor(colorName);
+      this.setLED(address, colorVal, true);
     }
   }
 
@@ -22,41 +21,52 @@ class LEDManager {
     // modifiedClips: array of modified clip indexes for this row
     // activeClips: array of activeClips indexed by track
 
-    // Parse what clips exist in this scene row
     const clips = this.parseClips(sceneCode);
 
-    for (let col = 0; col < 8; col++) {
-      const note = this.rowMapping[row] + col;
-      let color;
+    // The mapping defines how many clips per row (e.g., 8)
+    const cols = this.mapping.getNumberOfColumns();
+    // Typically, you have 8 clips plus one scene launch column; 
+    // adjust as needed based on your mapping if scene launch is in that row.
+    // If the last column is for scene launch, you might do cols-1 for actual clips.
+    const clipCount = 8; // assuming 8 clips and 1 scene column.
 
+    for (let col = 0; col < clipCount; col++) {
+      const address = this.mapping.getClipLEDAddress(row, col);
+      let colorName;
       if (clips.hasOwnProperty(`d${col + 1}`)) {
         if (modifiedClips.includes(col)) {
-          color = this.ledColors.modified; // green
+          colorName = 'modified';
         } else if (activeClips[col] === row) {
-          color = this.ledColors.active; // orange
+          colorName = 'active';
         } else {
-          color = this.ledColors.on; // red
+          colorName = 'on';
         }
       } else {
-        color = this.ledColors.off;
+        colorName = 'off';
       }
+      const colorVal = this.mapping.getLEDColor(colorName);
+      this.setLED(address, colorVal);
+    }
 
-      this.setLED(note, color);
+    // If the mapping includes a scene launch column, update that LED as well
+    if (cols > 8) {
+      const sceneLaunchAddress = this.mapping.getSceneLaunchLEDAddress(row);
+      // Decide what color scene launch LED should have. 
+      // For example, "on" if the scene is defined, "off" otherwise:
+      const sceneDefined = Object.keys(clips).length > 0;
+      const sceneColorVal = this.mapping.getLEDColor(sceneDefined ? 'on' : 'off');
+      this.setLED(sceneLaunchAddress, sceneColorVal);
     }
   }
 
   updateAllLEDs(scenes, activeClips, modifiedClipsMap, modifierButtons) {
     this.clearLEDs();
-    // Update each scene row
-    Object.keys(scenes).forEach((sceneKey) => {
-      const row = parseInt(sceneKey, 10) - 1;
-      if (row >= 0 && row < 8) {
-        const sceneCode = scenes[sceneKey];
-        const modifiedClips = modifiedClipsMap[row] ? Array.from(modifiedClipsMap[row]) : [];
-        this.updateRowLEDs(row, sceneCode, modifiedClips, activeClips);
-      }
+    const rows = Object.keys(scenes).map(k => parseInt(k,10)-1).filter(r => r >=0);
+    rows.forEach((row) => {
+      const sceneCode = scenes[row + 1];
+      const modifiedClips = modifiedClipsMap[row] ? Array.from(modifiedClipsMap[row]) : [];
+      this.updateRowLEDs(row, sceneCode, modifiedClips, activeClips);
     });
-
     this.updateAutomapLEDs(modifierButtons);
   }
 
@@ -76,7 +86,6 @@ class LEDManager {
     return clips;
   }
 
-
   // Set LED state for a specific button
   setLED(note, color, sendCC = false) {
     this.midiManager.sendMessage([sendCC ? 176 : 144, note, color]);
@@ -84,8 +93,11 @@ class LEDManager {
 
   // Clear all LEDs
   clearLEDs() {
+    // It's still okay to just iterate over all possible notes and turn them off.
+    // Alternatively, the mapping could define how to clear. 
     for (let note = 0; note < 128; note++) {
-      this.setLED(note, 0);
+      this.setLED(note, this.mapping.getLEDColor('off'));
+      this.setLED(note,this.mapping.getLEDColor('off'),true); //also reset cc's to 0
     }
   }
 }
