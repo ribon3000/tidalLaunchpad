@@ -13,7 +13,7 @@ class LEDManager {
     // We map these buttons onto the automapRow starting at index 4.
     for (let i = 0; i < 4; i++) {
       const state = modifierButtons[i+1] ? this.ledColors.active : this.ledColors.off;
-      this.midiManager.setLED(this.automapRow[i+4], state, true);
+      this.setLED(this.automapRow[i+4], state, true);
     }
   }
 
@@ -41,12 +41,12 @@ class LEDManager {
         color = this.ledColors.off;
       }
 
-      this.midiManager.setLED(note, color);
+      this.setLED(note, color);
     }
   }
 
   updateAllLEDs(scenes, activeClips, modifiedClipsMap, modifierButtons) {
-    this.midiManager.clearLEDs();
+    this.clearLEDs();
     // Update each scene row
     Object.keys(scenes).forEach((sceneKey) => {
       const row = parseInt(sceneKey, 10) - 1;
@@ -74,6 +74,19 @@ class LEDManager {
     });
 
     return clips;
+  }
+
+
+  // Set LED state for a specific button
+  setLED(note, color, sendCC = false) {
+    this.midiManager.sendMessage([sendCC ? 176 : 144, note, color]);
+  }
+
+  // Clear all LEDs
+  clearLEDs() {
+    for (let note = 0; note < 128; note++) {
+      this.setLED(note, 0);
+    }
   }
 }
 

@@ -35,18 +35,6 @@ class MIDIManager {
   sendMessage(message) {
     this.output.sendMessage(message);
   }
-
-  // Set LED state for a specific button
-  setLED(note, color, sendCC = false) {
-    this.sendMessage([sendCC ? 176 : 144, note, color]);
-  }
-
-  // Clear all LEDs
-  clearLEDs() {
-    for (let note = 0; note < 128; note++) {
-      this.setLED(note, 0);
-    }
-  }
 }
 
 module.exports = MIDIManager;
