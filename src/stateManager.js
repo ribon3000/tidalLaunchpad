@@ -4,12 +4,13 @@ const fs = require('fs');
 const TidalParser = require('./TidalParser');
 
 class StateManager extends EventEmitter {
-  constructor(tidalManager, filePath, ledManager) {
+  constructor(tidalManager, filePath, ledManager, generatorProvider) {
     super();
     this.currentPage = 0;
     this.tidalManager = tidalManager;
     this.filePath = filePath;
     this.ledManager = ledManager;
+    this.generatorProvider = generatorProvider;
     this.scenes = {};
     this.modifiedClips = {};
     this.activeClips = Array(8).fill(null); // Active clips per track

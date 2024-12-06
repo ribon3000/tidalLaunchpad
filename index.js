@@ -6,6 +6,8 @@ const LEDManager = require('./src/LEDManager');
 const MIDIInputHandler = require('./src/MIDIInputHandler.js');
 const LaunchpadMiniMk2Mapping = require('./src/mappings/LaunchpadMiniMk2Mapping'); // example path
 
+const GeneratorProvider = require('./src/TidalCodeGen/GeneratorProvider.js')
+
 const cli = new CLIManager();
 const midiManager = new MIDIManager(cli.getInputPort(), cli.getOutputPort());
 
@@ -18,8 +20,9 @@ const tidalCodeFile = cli.getFilePath() ? cli.getFilePath() : './playback.hs';
 const tidal = new TidalManager(tidalBootFile);
 tidal.start();
 
+const generatorProvider = new GeneratorProvider();
 const ledManager = new LEDManager(midiManager, mapping);
-const state = new StateManager(tidal, tidalCodeFile, ledManager);
+const state = new StateManager(tidal, tidalCodeFile, ledManager,generatorProvider);
 
 new MIDIInputHandler(midiManager, state, mapping);
 
