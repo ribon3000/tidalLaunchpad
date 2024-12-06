@@ -20,11 +20,19 @@ class MIDIInputHandler {
         break;
 
       case 'clipPress':
-        this.handleClipPress(event.row, event.col);
+        if(this.stateManager.getCurrentPage() == 0){
+          this.handleClipPress(event.row, event.col);
+        } else {
+          console.log('got clip button press: '+JSON.stringify(event))
+        }
         break;
 
       case 'sceneLaunch':
-        this.stateManager.launchScene(event.row);
+        if(this.stateManager.getCurrentPage() == 0){
+          this.stateManager.launchScene(event.row);
+        } else {
+          console.log('got scene launch button press: '+JSON.stringify(event))
+        }
         break;
 
       case 'pageButton':

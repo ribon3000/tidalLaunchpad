@@ -32,6 +32,10 @@ class StateManager extends EventEmitter {
     this.updateAllLEDs()
   }
 
+  getCurrentPage(){
+    return this.currentPage
+  }
+
   reloadFile(filePath) {
     const fileContent = fs.readFileSync(filePath, 'utf-8');
     const oldScenes = this.scenes;
