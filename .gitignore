@@ -1,2 +1,9 @@
 node_modules*
 repomix-output.txt
+*repomix*
+*.maxpat
+*.amxd
+parseOSC.js
+*.tosc
+repomix.config.json
+.repomixignore
