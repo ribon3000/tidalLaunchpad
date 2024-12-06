@@ -12,8 +12,6 @@ const cli = new CLIManager();
 // Initialize MIDI Manager with specified ports
 const midiManager = new MIDIManager(cli.getInputPort(), cli.getOutputPort());
 
-
-
 // File paths & handler
 const tidalBootFile = './BootTidal.hs';
 const tidalCodeFile = cli.getFilePath() ? cli.getFilePath() : './playback.hs';
@@ -22,47 +20,11 @@ const tidalCodeFile = cli.getFilePath() ? cli.getFilePath() : './playback.hs';
 const tidal = new TidalManager(tidalBootFile);
 tidal.start();
 
-const state = new StateManager(tidal, tidalCodeFile);
-const ledManager = new LEDManager(midiManager, state);
+const ledManager = new LEDManager(midiManager);
+const state = new StateManager(tidal, tidalCodeFile, ledManager);
 
 // Initialize MIDI Input Handler to manage MIDI interactions
-new MIDIInputHandler(midiManager, state, ledManager);
+new MIDIInputHandler(midiManager, state);
 
-// Initial LED setup
-ledManager.updateAllLEDs();
-
-state.on('fileChanged', () => {
-  console.log('File changed, updating LEDs...');
-  ledManager.updateAllLEDs();
-  ledManager.updateAutomapLEDs();
-});
-
-state.on('clipActivated', ({ row, track, previousActiveRow }) => {
-  ledManager.setActiveClip(row, track);
-
-  if (previousActiveRow !== null && previousActiveRow !== row) {
-    const scenes = state.getScenes();
-    const sceneCode = scenes[previousActiveRow + 1];
-    ledManager.updateRowLEDs(previousActiveRow, sceneCode);
-  }
-});
-
-state.on('clipDeactivated', ({ track, previousActiveRow }) => {
-  if (previousActiveRow !== null) {
-    const scenes = state.getScenes();
-    const sceneCode = scenes[previousActiveRow + 1];
-    ledManager.updateRowLEDs(previousActiveRow, sceneCode);
-  }
-});
-
-state.on('sceneLaunched', ({ row, activeClips, previousActiveClips }) => {
-  ledManager.handleSceneLaunched(row, activeClips, previousActiveClips);
-});
-
-state.on('clipDeactivated', ({ track, previousActiveRow }) => {
-  if (previousActiveRow !== null) {
-    const scenes = state.getScenes();
-    const sceneCode = scenes[previousActiveRow + 1];
-    ledManager.updateRowLEDs(previousActiveRow, sceneCode);
-  }
-});
+// Initial LED setup handled by StateManager after loading scenes
+state.updateAllLEDs();

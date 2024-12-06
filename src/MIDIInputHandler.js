@@ -1,8 +1,8 @@
+// src/MIDIInputHandler.js
 class MIDIInputHandler {
-  constructor(midiManager, stateManager, ledManager) {
+  constructor(midiManager, stateManager) {
     this.midiManager = midiManager;
     this.stateManager = stateManager;
-    this.ledManager = ledManager;
 
     this.modifierButtons = [108, 109, 110, 111]; // Define the last 4 Automap buttons as modifier buttons
 
@@ -31,39 +31,17 @@ class MIDIInputHandler {
       }
 
       console.log(`Grid button pressed: row ${row}, col ${col}`);
-
       this.handleGridButtonPress(row, col);
     }
   }
 
   handleModifierButton(button) {
     const buttonIndex = this.modifierButtons.indexOf(button) + 1;
-  
-    // Toggle the state of the modifier button
     const currentState = this.stateManager.getModifierButtonState(buttonIndex);
     const newState = !currentState;
     this.stateManager.setModifierButtonState(buttonIndex, newState);
-  
     console.log(`Modifier button ${buttonIndex} ${newState ? 'activated' : 'deactivated'}`);
-  
-    // Update LEDs
-    this.ledManager.updateAutomapLEDs();
-  
-    // Resend currently playing clips with updated modifiers
-    const activeClips = this.stateManager.getActiveClips();
-    activeClips.forEach((row, track) => {
-      if (row !== null) {
-        const sceneKey = row + 1;
-        const sceneCode = this.stateManager.getScenes()[sceneKey];
-        if (sceneCode) {
-          const clipKey = `d${track + 1}`;
-          const modifiedCode = this.stateManager.modifyScene(sceneCode, clipKey);
-          this.stateManager.activateClip(row, track, clipKey, modifiedCode);
-        }
-      }
-    });
   }
-  
 
   handleAutomapButton(button, isPressed) {
     console.log(`Automap button ${button} ${isPressed ? 'pressed' : 'released'}`);
@@ -76,7 +54,7 @@ class MIDIInputHandler {
 
     if (!sceneCode) {
       console.log(`No scene found for row ${row + 1}, muting...`);
-      this.stateManager.muteAllClips()
+      this.stateManager.muteAllClips();
       return;
     }
 
@@ -89,8 +67,7 @@ class MIDIInputHandler {
 
       if (clips.hasOwnProperty(clipKey)) {
         // Activate clip and apply modifiers
-        const modifiedCode = this.stateManager.modifyScene(sceneCode, clipKey);
-        this.stateManager.activateClip(row, col, clipKey, modifiedCode);
+        this.stateManager.activateClip(row, col, clipKey, sceneCode);
       } else {
         // Mute clip
         this.stateManager.deactivateClip(col);

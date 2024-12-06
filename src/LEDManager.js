@@ -1,126 +1,79 @@
 // src/LEDManager.js
 
-const MIDIManager = require("./MIDIManager");
-
 class LEDManager {
-  constructor(midiManager, stateManager) {
+  constructor(midiManager) {
     this.midiManager = midiManager;
-    this.stateManager = stateManager;
     this.rowMapping = [0, 16, 32, 48, 64, 80, 96, 112]; // Launchpad rows
     this.ledColors = { off: 0, on: 13, active: 63, modified: 60 };
-    this.automapRow = [104,105,106,107,108,109,110,111]
+    this.automapRow = [104,105,106,107,108,109,110,111];
   }
 
-  updateAutomapLEDs(){
-    const modifierButtons = this.stateManager.state.activeButtons;
-
-    for(let i=0;i<Object.keys(modifierButtons).length;i++) {
-      this.midiManager.setLED(this.automapRow[i+4],modifierButtons[parseInt(i+1)] ? 63 : 0,true)
+  updateAutomapLEDs(modifierButtons) {
+    // modifierButtons: object with keys 1-4 and boolean values.
+    // We map these buttons onto the automapRow starting at index 4.
+    for (let i = 0; i < 4; i++) {
+      const state = modifierButtons[i+1] ? this.ledColors.active : this.ledColors.off;
+      this.midiManager.setLED(this.automapRow[i+4], state, true);
     }
   }
 
-  updateRowLEDs(row, sceneCode) {
-    const clips = this.stateManager.parseClips(sceneCode);
-    const modifiedClips = this.stateManager.getModifiedClips(row);
-    const activeClips = this.stateManager.getActiveClips();
-  
+  updateRowLEDs(row, sceneCode, modifiedClips, activeClips) {
+    // sceneCode: string code for the scene
+    // modifiedClips: array of modified clip indexes for this row
+    // activeClips: array of activeClips indexed by track
+
+    // Parse what clips exist in this scene row
+    const clips = this.parseClips(sceneCode);
+
     for (let col = 0; col < 8; col++) {
       const note = this.rowMapping[row] + col;
       let color;
-  
+
       if (clips.hasOwnProperty(`d${col + 1}`)) {
         if (modifiedClips.includes(col)) {
-          color = this.ledColors.modified; // Highlight modified clip (green)
+          color = this.ledColors.modified; // green
         } else if (activeClips[col] === row) {
-          color = this.ledColors.active; // Highlight active clip (orange)
+          color = this.ledColors.active; // orange
         } else {
-          color = this.ledColors.on; // Default color for an unmodified, available clip (red)
+          color = this.ledColors.on; // red
         }
       } else {
-        color = this.ledColors.off; // No clip available at this button position
+        color = this.ledColors.off;
       }
-  
+
       this.midiManager.setLED(note, color);
     }
   }
-  
 
-  updateAllLEDs() {
-    const scenes = this.stateManager.getScenes();
+  updateAllLEDs(scenes, activeClips, modifiedClipsMap, modifierButtons) {
     this.midiManager.clearLEDs();
+    // Update each scene row
     Object.keys(scenes).forEach((sceneKey) => {
       const row = parseInt(sceneKey, 10) - 1;
       if (row >= 0 && row < 8) {
         const sceneCode = scenes[sceneKey];
-        this.updateRowLEDs(row, sceneCode);
+        const modifiedClips = modifiedClipsMap[row] ? Array.from(modifiedClipsMap[row]) : [];
+        this.updateRowLEDs(row, sceneCode, modifiedClips, activeClips);
       }
     });
+
+    this.updateAutomapLEDs(modifierButtons);
   }
 
-  setActiveClip(row, col) {
-    console.log(`Activating clip in row ${row}, column ${col}`);
+  // Utility method to parse clips from code
+  parseClips(code) {
+    const lines = code.split('\n');
+    const clips = {};
 
-    // Deactivate the previously active clip in the column
-    const previousActiveRow = this.stateManager.setActiveClip(row, col);
-    if (previousActiveRow !== null && previousActiveRow !== row) {
-      console.log(`Deactivating previous active clip in row ${previousActiveRow}, column ${col}`);
-      const scenes = this.stateManager.getScenes();
-      const sceneCode = scenes[previousActiveRow + 1];
-      this.updateRowLEDs(previousActiveRow, sceneCode);
-    }
-
-    // Update the LEDs for the newly activated row
-    const sceneCode = this.stateManager.getScenes()[row + 1];
-    this.updateRowLEDs(row, sceneCode);
-  }
-
-  deactivateClip(col) {
-    console.log(`Deactivating clip in column ${col}`);
-
-    const previousActiveRow = this.stateManager.getActiveClips()[col];
-    if (previousActiveRow !== null) {
-      const scenes = this.stateManager.getScenes();
-      const sceneCode = scenes[previousActiveRow + 1];
-      this.stateManager.deactivateClip(col);
-      this.updateRowLEDs(previousActiveRow, sceneCode);
-    }
-  }
-
-  setSceneActive(row) {
-    console.log(`Setting all clips in row ${row} as active`);
-
-    // Deactivate all other clips
-    for (let col = 0; col < 8; col++) {
-      this.stateManager.deactivateClip(col);
-    }
-    const scenes = this.stateManager.getScenes();
-
-    // Update LEDs for all rows
-    Object.keys(scenes).forEach((sceneKey, index) => {
-      this.updateRowLEDs(index, scenes[sceneKey]);
+    lines.forEach((line) => {
+      const match = line.match(/^\s*(d[1-8])\s*\$/);
+      if (match) {
+        const clipName = match[1];
+        clips[clipName] = line;
+      }
     });
 
-    // Set all clips in the row as active
-    for (let col = 0; col < 8; col++) {
-      this.stateManager.setActiveClip(row, col);
-    }
-
-    // Update LEDs for the active row
-    const sceneCode = scenes[row + 1];
-    this.updateRowLEDs(row, sceneCode);
-  }
-
-
-  handleSceneLaunched(row, activeClips, previousActiveClips) {
-    const scenes = this.stateManager.getScenes();
-  
-    // Update LEDs for all rows
-    for (let r = 0; r < 8; r++) {
-      const sceneCode = scenes[r + 1];
-      if (sceneCode) {
-        this.updateRowLEDs(r, sceneCode);
-      }
-    }
+    return clips;
   }
 }
 

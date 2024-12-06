@@ -4,25 +4,27 @@ const fs = require('fs');
 const TidalParser = require('./TidalParser');
 
 class StateManager extends EventEmitter {
-  constructor(tidalManager, filePath) {
+  constructor(tidalManager, filePath, ledManager) {
     super();
     this.tidalManager = tidalManager;
     this.filePath = filePath;
+    this.ledManager = ledManager;
     this.scenes = {};
     this.modifiedClips = {};
     this.activeClips = Array(8).fill(null); // Active clips per track
-    this.state = { active_streams: {}, active_buttons: {1: false, 2: false, 3: false, 4: false} };
+    this.state = { 
+      active_streams: {}, 
+      active_buttons: {1: false, 2: false, 3: false, 4: false} 
+    };
 
-    // Load file content and initialize state
     fs.watch(this.filePath, () => {
       console.log(`File ${this.filePath} changed, reloading...`);
-      this.reloadFile(filePath)
+      this.reloadFile(this.filePath);
     });
 
     this.reloadFile(this.filePath);
   }
 
-  // Reload scenes from the file
   reloadFile(filePath) {
     const fileContent = fs.readFileSync(filePath, 'utf-8');
     const oldScenes = this.scenes;
@@ -35,7 +37,6 @@ class StateManager extends EventEmitter {
     Object.keys(this.scenes).forEach((key) => {
       const oldCode = oldScenes[key] || '';
       const newCode = this.scenes[key] || '';
-
       if (oldCode !== newCode) {
         const row = parseInt(key, 10) - 1;
         const modifiedInCurrentScene = TidalParser.parseModifiedClips(oldCode, newCode);
@@ -50,7 +51,12 @@ class StateManager extends EventEmitter {
       }
     });
 
-    this.emit('fileChanged', this.scenes);
+    // After file changed, update LEDs
+    this.updateAllLEDs();
+  }
+
+  updateAllLEDs() {
+    this.ledManager.updateAllLEDs(this.scenes, this.activeClips, this.modifiedClips, this.state.active_buttons);
   }
 
   // Scene and clip management methods
@@ -96,13 +102,16 @@ class StateManager extends EventEmitter {
     const muteCommand = `d${clipNumber} $ silence`;
     this.tidalManager.sendCommand(muteCommand);
 
-    // Emit an event to update LEDs
-    this.emit('clipDeactivated', { track, previousActiveRow });
+    // Update LEDs: if there was a previously active row, update that row's LEDs
+    if (previousActiveRow !== null) {
+      const sceneCode = this.scenes[previousActiveRow + 1];
+      const modifiedClips = this.getModifiedClips(previousActiveRow);
+      this.ledManager.updateRowLEDs(previousActiveRow, sceneCode, modifiedClips, this.activeClips);
+    }
   }
 
   muteAllClips(){
-    for(let i=0;i<8;i++)
-    {
+    for(let i=0;i<8;i++) {
       this.deactivateClip(i);
     }
   }
@@ -113,73 +122,84 @@ class StateManager extends EventEmitter {
 
   activateClip(row, track, clipKey, sceneCode) {
     const modifiedCode = TidalParser.modifyScene(this.state.active_buttons, sceneCode, clipKey);
-
     this.tidalManager.sendCommand(`:{\n${modifiedCode}\n:}`);
 
     this.clearModifiedClips(row, track);
-    this.state.active_streams[`d${track + 1}`] = `scene ${row + 1}`;
+    const previousActiveRow = this.activeClips[track];
+    this.setActiveClip(row, track);
 
-    this.emit('clipActivated', { row, track, previousActiveRow: this.activeClips[track] });
+    // Update LEDs for the activated clip row
+    const updatedSceneCode = this.scenes[row + 1];
+    const modifiedClips = this.getModifiedClips(row);
+    this.ledManager.updateRowLEDs(row, updatedSceneCode, modifiedClips, this.activeClips);
+
+    // If a different row was previously active on this track, update its LEDs
+    if (previousActiveRow !== null && previousActiveRow !== row) {
+      const prevSceneCode = this.scenes[previousActiveRow + 1];
+      const prevModifiedClips = this.getModifiedClips(previousActiveRow);
+      this.ledManager.updateRowLEDs(previousActiveRow, prevSceneCode, prevModifiedClips, this.activeClips);
+    }
   }
-  
 
   launchScene(row) {
     const sceneKey = row + 1;
     const sceneCode = this.scenes[sceneKey];
-    console.log(sceneCode)
-  
     if (!sceneCode) {
       console.log(`No scene found for row ${sceneKey}`);
       return;
     }
-  
+
     // Modify the scene to activate the desired clips
     const modifiedScene = TidalParser.modifyScene(this.state.active_buttons, sceneCode);
-  
-    // Send the modified scene code to TidalCycles
     this.tidalManager.sendCommand(`:{\n${modifiedScene}\n:}`);
-  
+
     // Parse the active clips from the scene
     const clips = TidalParser.parseClips(sceneCode);
-  
+
     // Save the current state of active clips
     const previousActiveClips = [...this.activeClips];
     this.activeClips = Array(8).fill(null);
-  
+
     Object.keys(clips).forEach((clipKey) => {
       const trackIndex = parseInt(clipKey.slice(1), 10) - 1;
       if (trackIndex >= 0 && trackIndex < this.activeClips.length) {
         this.activeClips[trackIndex] = row;
       }
     });
-  
+
     this.clearModifiedClips(row);
-  
-    // Emit the sceneLaunched event
-    this.emit('sceneLaunched', {
-      row,
-      activeClips: this.activeClips,
-      previousActiveClips,
-    });
+
+    // Update LEDs for all rows after launching scene
+    this.updateAllLEDs();
   }
-  
+
   setModifierButtonState(button, state) {
     this.state.active_buttons[button] = state;
-  
-    // Emit an event if needed (optional)
-    this.emit('modifierButtonChanged', { button, state });
+    // Update automap LEDs after changing modifier states
+    this.updateAllLEDs();
+
+    // Resend currently playing clips with updated modifiers
+    const activeClips = this.getActiveClips();
+    activeClips.forEach((r, track) => {
+      if (r !== null) {
+        const sceneKey = r + 1;
+        const sceneCode = this.scenes[sceneKey];
+        if (sceneCode) {
+          const clipKey = `d${track + 1}`;
+          const modifiedCode = TidalParser.modifyScene(this.state.active_buttons, sceneCode, clipKey);
+          this.tidalManager.sendCommand(`:{\n${modifiedCode}\n:}`);
+        }
+      }
+    });
   }
 
+  getModifierButtonState(button) {
+    return this.state.active_buttons[button] || false;
+  }
 
-    getModifierButtonState(button) {
-      return this.state.active_buttons[button] || false;
-    }
-
-    getCurrentlyActiveModifierButtons(){
-      return this.state.active_buttons
-    }
-
-  
+  getCurrentlyActiveModifierButtons(){
+    return this.state.active_buttons;
+  }
 
   writeSceneToFile(sceneKey, updatedSceneCode) {
     const updatedScenes = { ...this.scenes };
