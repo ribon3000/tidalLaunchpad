@@ -51,14 +51,13 @@ class AcidBasslineGenerator extends BasePatternGenerator {
         accentPattern = maybeApply(0.5,reversePattern)(accentPattern)
 
         // Construct the final pattern
-        const patternCode = ` outside ${loopLength} (loopAt "${loopAtPat}") $ fast "${fastValue}"
+        const patternCode = `outside ${loopLength} (loopAt "${loopAtPat}") $ fast "${fastValue}"
         $ s ${trigPattern}
         # n (${midiNoteNumber} + ${octavePattern} + "${melodyPattern}")
         # legato ${slidePattern}
         # amp ${accentPattern}
         # val1 (slow ${Math.random() + 0.5} $ rand)
-        # val2 (slow ${Math.random() + 0.5} $ rand)
-        `;
+        # val2 (slow ${Math.random() + 0.5} $ rand)`;
         return patternCode;
       }
 

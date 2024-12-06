@@ -25,7 +25,7 @@ class LEDManager {
     }
   }
 
-  updateRowLEDs(row, sceneCode, modifiedClips, activeClips) {
+  updateRowLEDs(row, sceneCode, modifiedClips, activeClips, pendingTracks=[]) {
     // sceneCode: string code for the scene
     // modifiedClips: array of modified clip indexes for this row
     // activeClips: array of activeClips indexed by track
@@ -46,7 +46,13 @@ class LEDManager {
         if (modifiedClips.includes(col)) {
           colorName = 'modified';
         } else if (activeClips[col] === row) {
-          colorName = 'active';
+          // If this active clip track is in pendingTracks, override color
+          if (pendingTracks.includes(col)) {
+            // pendingChanges color
+            colorName = 'modified'; 
+          } else {
+            colorName = 'active';
+          }
         } else {
           colorName = 'on';
         }
@@ -68,17 +74,29 @@ class LEDManager {
     }
   }
 
-  updateAllLEDs(scenes, activeClips, modifiedClipsMap, modifierButtons, activePage) {
+  updateAllLEDs(scenes, activeClips, modifiedClipsMap, modifierButtons, activePage, pendingChanges) {
     this.clearLEDs();
     if(activePage == 0){
       const rows = Object.keys(scenes).map(k => parseInt(k,10)-1).filter(r => r >=0);
       rows.forEach((row) => {
         const sceneCode = scenes[row + 1];
         const modifiedClips = modifiedClipsMap[row] ? Array.from(modifiedClipsMap[row]) : [];
-        this.updateRowLEDs(row, sceneCode, modifiedClips, activeClips);
+        
+        // Check pendingChanges
+        // If any track playing this row has pendingChanges, highlight that clip specially
+        let pendingTracks = [];
+        for (let track = 0; track < activeClips.length; track++) {
+          if (activeClips[track] === row && pendingChanges[track]) {
+            // This track has pending changes
+            pendingTracks.push(track);
+          }
+        }
+  
+        // updateRowLEDs with a new parameter pendingTracks
+        this.updateRowLEDs(row, sceneCode, modifiedClips, activeClips, pendingTracks);
       });
     } else {
-      //keep LEDS clear for now 
+      // Other pages: keep LEDS clear for now 
     }
     this.updateAutomapLEDs(modifierButtons);
     this.updatePageLEDs(activePage)

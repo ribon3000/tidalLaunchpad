@@ -20,10 +20,14 @@ class MIDIInputHandler {
         break;
 
       case 'clipPress':
-        if(this.stateManager.getCurrentPage() == 0){
+        if (this.stateManager.getCurrentPage() == 0) {
           this.handleClipPress(event.row, event.col);
+        } else if (this.stateManager.getCurrentPage() == 1) {
+          // Page 2 logic:
+          console.log('Page 2 clip press: generate code for track 1 using acidBasslineGenerator');
+          this.stateManager.generateCodeForTrack(0, 'acidBasslineGenerator');
         } else {
-          console.log('got clip button press: '+JSON.stringify(event))
+          console.log('Other page action...');
         }
         break;
 
@@ -46,10 +50,26 @@ class MIDIInputHandler {
   }
 
   handleClipPress(row, col) {
-    console.log(`${row}, ${col}`)
     const scenes = this.stateManager.getScenes();
     const sceneKey = row + 1;
     const sceneCode = scenes[sceneKey];
+    const trackIndex = col;
+
+    if (this.stateManager.hasPendingChanges(trackIndex)) {
+      // If this is the same clip that has pending changes, revert
+      // We know it's the same clip if it's active
+      // Actually, if the user presses the same clip that's currently active and pending, revert
+      const activeRowForThisTrack = this.stateManager.getActiveClips()[trackIndex];
+      if (activeRowForThisTrack === row) {
+        // same clip
+        this.stateManager.revertPendingChanges(trackIndex);
+        return;
+      } else {
+        // different clip pressed, commit pending changes to file
+        this.stateManager.commitPendingChanges(trackIndex);
+        // now activate the newly pressed clip as normal
+      }
+    }
 
     if (!sceneCode) {
       console.log(`No scene found for row ${row + 1}, muting...`);

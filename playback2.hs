@@ -17,6 +17,7 @@ do
   hush
   let val1 = pF "val1"
       val2 = pF "val2"
+  d1 $ s "bd*4" # n 36
   d2 $ id
     $ outside 4 (loopAt "0.5 [0.25 4 8 17] 10") -- button 4
     $ fast 2 -- button 3

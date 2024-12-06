@@ -14,6 +14,7 @@ class StateManager extends EventEmitter {
     this.scenes = {};
     this.modifiedClips = {};
     this.activeClips = Array(8).fill(null); // Active clips per track
+    this.pendingChanges = {}; // track -> { sceneKey, originalClipLine, newClipCode, originalSceneCode }
     this.state = { 
       active_streams: {}, 
       active_buttons: {1: false, 2: false, 3: false, 4: false} 
@@ -68,7 +69,11 @@ class StateManager extends EventEmitter {
   }
 
   updateAllLEDs() {
-    this.ledManager.updateAllLEDs(this.scenes, this.activeClips, this.modifiedClips, this.state.active_buttons, this.currentPage);
+    this.ledManager.updateAllLEDs(this.scenes, this.activeClips, this.modifiedClips, this.state.active_buttons, this.currentPage, this.pendingChanges);
+  }
+
+  hasPendingChanges(trackIndex) {
+    return !!this.pendingChanges[trackIndex];
   }
 
   // Scene and clip management methods
@@ -213,6 +218,109 @@ class StateManager extends EventEmitter {
   getCurrentlyActiveModifierButtons(){
     return this.state.active_buttons;
   }
+
+
+generateCodeForTrack(trackIndex, generatorKey) {
+  // Check if there's an active clip for this track
+  const row = this.activeClips[trackIndex];
+  if (row === null) {
+    console.log(`No active clip on track ${trackIndex+1}, can't generate new code`);
+    return;
+  }
+
+  const sceneKey = row + 1;
+  const sceneCode = this.scenes[sceneKey];
+  if (!sceneCode) {
+    console.log(`No scene found for active clip on track ${trackIndex+1}`);
+    return;
+  }
+
+  const clipKey = `d${trackIndex + 1}`;
+  const clips = this.parseClips(sceneCode);
+  if (!clips[clipKey]) {
+    console.log(`No clip found for track ${trackIndex+1} in scene ${sceneKey}`);
+    return;
+  }
+
+  const originalClipLine = clips[clipKey];
+
+  // Run the generator
+  const newPattern = this.generatorProvider.runGenerator(generatorKey, trackIndex+1);
+
+  // Construct a new scene code with the generated pattern in place of the original clip line
+  const newClipCode = `  d${trackIndex+1} $ ${newPattern}`;
+
+  // We don’t overwrite scene code in file yet, we just send to Tidal
+  // But first, we must modify the scene to activate only this new clip for testing.
+  // We'll reuse `modifyScene` logic by passing activeClip = clipKey.
+  const newScene = this.applyNewClipToScene(sceneCode, clipKey, newClipCode);
+  const modifiedScene = TidalParser.modifyScene(this.state.active_buttons, newScene, clipKey);
+
+  // Send the modified code to Tidal
+  this.tidalManager.sendCommand(`:{\n${modifiedScene}\n:}`);
+
+  // Store pending changes
+  this.pendingChanges[trackIndex] = {
+    sceneKey,
+    originalSceneCode: sceneCode,
+    originalClipLine,
+    newClipCode
+  };
+
+  // Since we've updated what's playing on Tidal, also update internal state to show that the active clip now corresponds to generated code
+  // Mark this clip as "pending" somehow, or just rely on LEDs later
+  this.updateAllLEDs();
+}
+
+applyNewClipToScene(sceneCode, clipKey, newClipCode) {
+  // Replace the line for clipKey with newClipCode
+  const lines = sceneCode.split('\n');
+  const newLines = lines.map(line => {
+    const match = line.match(/^\s*(d[1-8])\s*\$/);
+    if (match && match[1] === clipKey) {
+      return newClipCode;
+    } else {
+      return line;
+    }
+  });
+  return newLines.join('\n');
+}
+
+revertPendingChanges(trackIndex) {
+  const pending = this.pendingChanges[trackIndex];
+  if (!pending) return;
+
+  // Revert to originalSceneCode in Tidal
+  const clipKey = `d${trackIndex + 1}`;
+  const modifiedCode = TidalParser.modifyScene(this.state.active_buttons,pending.originalSceneCode,clipKey);
+  this.tidalManager.sendCommand(`:{\n${modifiedCode}\n:}`);
+
+  // Clear pending changes
+  delete this.pendingChanges[trackIndex];
+
+  // Update LEDs
+  this.updateAllLEDs();
+}
+
+commitPendingChanges(trackIndex) {
+  const pending = this.pendingChanges[trackIndex];
+  if (!pending) return;
+
+  // Commit means writing the changes to file:
+  // Replace the originalClipLine in originalSceneCode with newClipCode
+  const updatedSceneCode = this.applyNewClipToScene(pending.originalSceneCode, `d${trackIndex+1}`, pending.newClipCode);
+  
+  // Update internal scenes and write to file
+  this.scenes[pending.sceneKey] = updatedSceneCode;
+  // You'll need a reference to fileHandler in stateManager for this (currently it's not passed in)
+  // Let's assume we add it similarly to how tidalManager and ledManager were passed
+  this.fileHandler.writeFile(this.scenes);
+
+  // Clear pending changes
+  delete this.pendingChanges[trackIndex];
+
+  this.updateAllLEDs();
+}
 
   writeSceneToFile(sceneKey, updatedSceneCode) {
     const updatedScenes = { ...this.scenes };

@@ -18,3 +18,5 @@ class GeneratorProvider {
     }
 
 }
+
+module.exports = GeneratorProvider
