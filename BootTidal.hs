@@ -81,6 +81,12 @@ let only = (hush >>)
     d16 = p 16
 :}
 
+:{
+let val1 = pF "val1"
+    val2 = pF "val2"
+    val3 = pF "val3"
+    val4 = pF "val4"
+:}
 
 :{
 let loopAt = loopFirstAt

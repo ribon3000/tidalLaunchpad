@@ -273,17 +273,57 @@ generateCodeForTrack(trackIndex, generatorKey) {
 }
 
 applyNewClipToScene(sceneCode, clipKey, newClipCode) {
-  // Replace the line for clipKey with newClipCode
   const lines = sceneCode.split('\n');
-  const newLines = lines.map(line => {
-    const match = line.match(/^\s*(d[1-8])\s*\$/);
-    if (match && match[1] === clipKey) {
-      return newClipCode;
-    } else {
-      return line;
+
+  const clipStartRegex = new RegExp(`^\\s*(${clipKey})\\s*\\$`);
+  const anotherClipRegex = /^\s*(d[1-8])\s*\$/;
+  const sceneStartRegex = /^-- scene \d+/i;
+
+  let clipStartIndex = -1;
+  let clipEndIndex = -1;
+
+  // Find the start of the target clip
+  for (let i = 0; i < lines.length; i++) {
+    if (clipStartRegex.test(lines[i])) {
+      clipStartIndex = i;
+      break;
     }
-  });
-  return newLines.join('\n');
+  }
+
+  if (clipStartIndex === -1) {
+    // Clip not found, return original scene code
+    return sceneCode;
+  }
+
+  // Starting from clipStartIndex+1, find the end of the clip
+  // The clip ends if we hit:
+  // - An empty line
+  // - Another clip line
+  // - Another scene line
+  for (let j = clipStartIndex + 1; j < lines.length; j++) {
+    const line = lines[j].trim();
+
+    if (line === '' || sceneStartRegex.test(line) || anotherClipRegex.test(line)) {
+      // The line at j does not belong to this clip
+      clipEndIndex = j - 1;
+      break;
+    }
+  }
+
+  // If we never hit a boundary, the clip goes until the end of the file
+  if (clipEndIndex === -1) {
+    clipEndIndex = lines.length - 1;
+  }
+
+  // Now we have clipStartIndex and clipEndIndex indicating the old clip block
+  // Replace that entire block with newClipCode lines
+  const newClipLines = newClipCode.split('\n');
+
+  const beforeClip = lines.slice(0, clipStartIndex);
+  const afterClip = lines.slice(clipEndIndex + 1);
+
+  const updatedLines = [...beforeClip, ...newClipLines, ...afterClip];
+  return updatedLines.join('\n');
 }
 
 revertPendingChanges(trackIndex) {
@@ -310,11 +350,7 @@ commitPendingChanges(trackIndex) {
   // Replace the originalClipLine in originalSceneCode with newClipCode
   const updatedSceneCode = this.applyNewClipToScene(pending.originalSceneCode, `d${trackIndex+1}`, pending.newClipCode);
   
-  // Update internal scenes and write to file
-  this.scenes[pending.sceneKey] = updatedSceneCode;
-  // You'll need a reference to fileHandler in stateManager for this (currently it's not passed in)
-  // Let's assume we add it similarly to how tidalManager and ledManager were passed
-  this.fileHandler.writeFile(this.scenes);
+  this.writeSceneToFile(pending.sceneKey,updatedSceneCode);
 
   // Clear pending changes
   delete this.pendingChanges[trackIndex];
@@ -322,11 +358,25 @@ commitPendingChanges(trackIndex) {
   this.updateAllLEDs();
 }
 
-  writeSceneToFile(sceneKey, updatedSceneCode) {
+writeSceneToFile(sceneKey, updatedSceneCode) {
     const updatedScenes = { ...this.scenes };
     updatedScenes[sceneKey] = updatedSceneCode;
 
-    this.fileHandler.writeFile(updatedScenes);
+    // this.fileHandler.writeFile(updatedScenes);
+    let fileContent = '';
+
+    // Reconstruct the file from the scenes
+    Object.keys(updatedScenes).forEach((key, index) => {
+      let sceneContent = updatedScenes[key].trim();
+      fileContent += `-- scene ${key}\n${sceneContent}`;
+      if (index !== Object.keys(updatedScenes).length - 1) {
+        fileContent += '\n\n'; // Add two newlines between scenes
+      }
+    });
+
+    fs.writeFileSync(this.filePath, fileContent);
+    console.log(`File updated with new scenes.`);
+
   }
 }
 
