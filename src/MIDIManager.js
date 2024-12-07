@@ -1,7 +1,7 @@
 const midi = require('midi');
 
 class MIDIManager {
-  constructor(inputPort, outputPort, controlOutPort) {
+  constructor(inputPort, outputPort, controlOutPort = -1) {
     this.input = new midi.Input();
     this.output = new midi.Output();
     this.controlOut = (controlOutPort > -1) ? new midi.Output() : null;
@@ -9,7 +9,7 @@ class MIDIManager {
     // Open specified MIDI ports
     this.input.openPort(inputPort);
     this.output.openPort(outputPort);
-    if(controlOut > -1) {
+    if(controlOutPort > -1) {
       this.controlOut.openPort(controlOutPort)
       console.log(`MIDI output port ${controlOutPort} opened for MIDI controls: ${this.output.getPortName(outputPort)}`);
     }
