@@ -33,7 +33,8 @@ class LEDManager {
   }
 
 
-  updateRowLEDs(row, sceneCode, modifiedClips, activeClips, pendingTracks=[]) {
+  updateRowLEDs(row_, sceneCode, modifiedClips, activeClips, pendingTracks=[], offset) {
+    const row = row_ - offset;
     const clips = this.parseClips(sceneCode);
     const cols = this.mapping.getNumberOfColumns();
     const clipCount = 8;
@@ -71,33 +72,41 @@ class LEDManager {
       this.setLED(sceneLaunchAddress, sceneColorVal, false, sceneLaunchChannel);
     }
   }
-  updateAllLEDs(scenes, activeClips, modifiedClipsMap, modifierButtons, activePage, pendingChanges) {
-    this.clearLEDs();
-    if(activePage == 0){
-      const rows = Object.keys(scenes).map(k => parseInt(k,10)-1).filter(r => r >=0);
-      rows.forEach((row) => {
-        const sceneCode = scenes[row + 1];
-        const modifiedClips = modifiedClipsMap[row] ? Array.from(modifiedClipsMap[row]) : [];
-        
-        // Check pendingChanges
-        // If any track playing this row has pendingChanges, highlight that clip specially
-        let pendingTracks = [];
-        for (let track = 0; track < activeClips.length; track++) {
-          if (activeClips[track] === row && pendingChanges[track]) {
-            // This track has pending changes
-            pendingTracks.push(track);
-          }
+
+updateAllLEDs(scenes, activeClips, modifiedClipsMap, modifierButtons, activePage, pendingChanges, sceneOffset) {
+  this.clearLEDs();
+  if(activePage == 0){
+    // Actually, since LEDManager doesn’t have a direct reference to StateManager, pass sceneOffset as a parameter or store it in StateManager and retrieve it somehow.
+    const offset = sceneOffset
+
+    const rowIndexes = Object.keys(scenes)
+      .map(k => parseInt(k,10))
+      .filter(sceneNum => sceneNum > offset && sceneNum <= offset + 8)
+      .map(sceneNum => sceneNum - 1); // sceneNum-1 for zero-based row
+
+    rowIndexes.forEach((row) => {
+      const sceneKey = row + 1;
+      const sceneCode = scenes[sceneKey];
+      const modifiedClips = modifiedClipsMap[row] ? Array.from(modifiedClipsMap[row]) : [];
+     
+      // Check pendingChanges
+      let pendingTracks = [];
+      for (let track = 0; track < activeClips.length; track++) {
+        if (activeClips[track] === row && pendingChanges[track]) {
+          pendingTracks.push(track);
         }
-  
-        // updateRowLEDs with a new parameter pendingTracks
-        this.updateRowLEDs(row, sceneCode, modifiedClips, activeClips, pendingTracks);
-      });
-    } else {
-      // Other pages: keep LEDS clear for now 
-    }
-    this.updateAutomapLEDs(modifierButtons);
-    this.updatePageLEDs(activePage)
+      }
+
+      this.updateRowLEDs(row, sceneCode, modifiedClips, activeClips, pendingTracks, offset); 
+      // Notice we pass row - offset to updateRowLEDs so that LED row 0 always corresponds to scene sceneOffset+1
+    });
+  } else {
+    // Other pages: keep LEDS clear for now 
   }
+  this.updateAutomapLEDs(modifierButtons);
+  this.updatePageLEDs(activePage)
+}
+
 
   // Utility method to parse clips from code
   parseClips(code) {

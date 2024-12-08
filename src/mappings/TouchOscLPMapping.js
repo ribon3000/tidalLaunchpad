@@ -18,6 +18,12 @@ class LaunchpadMiniMk2Mapping extends ControllerMapping {
         const isModifier = this.modifierButtons.indexOf(key);
         const isPageButton = this.pageButtons.indexOf(key);
         if (isModifier > -1) {
+          if(isModifier === 2 && velocity > 0){
+            return {type:'scrollUp'}
+          }
+          if(isModifier === 3 && velocity > 0){
+            return {type:'scrollDown'}
+          }
           return { type: 'modifierPress', index: isModifier + 1, active: velocity > 0 };
         } else if (isPageButton > -1) {
           return { type: 'pageButton', key: key, pressed: velocity > 0 };

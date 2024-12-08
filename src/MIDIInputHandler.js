@@ -16,6 +16,16 @@ class MIDIInputHandler {
     if (!event) return;
 
     switch (event.type) {
+      case 'scrollUp':
+        if (this.stateManager.getCurrentPage() === 0) {
+          this.stateManager.decrementSceneOffset();
+        }
+        break;
+      case 'scrollDown':
+        if (this.stateManager.getCurrentPage() === 0) {
+          this.stateManager.incrementSceneOffset();
+        }
+        break;
       case 'modifierPress':
         this.stateManager.setModifierButtonState(event.index, event.active);
         break;

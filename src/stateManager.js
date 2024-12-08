@@ -7,6 +7,7 @@ class StateManager extends EventEmitter {
   constructor(tidalManager, filePath, ledManager, generatorProvider) {
     super();
     this.currentPage = 0;
+    this.sceneOffset = 0; 
     this.tidalManager = tidalManager;
     this.filePath = filePath;
     this.ledManager = ledManager;
@@ -69,11 +70,42 @@ class StateManager extends EventEmitter {
   }
 
   updateAllLEDs() {
-    this.ledManager.updateAllLEDs(this.scenes, this.activeClips, this.modifiedClips, this.state.active_buttons, this.currentPage, this.pendingChanges);
+    this.ledManager.updateAllLEDs(this.scenes, this.activeClips, this.modifiedClips, this.state.active_buttons, this.currentPage, this.pendingChanges, this.sceneOffset);
   }
 
   hasPendingChanges(trackIndex) {
     return !!this.pendingChanges[trackIndex];
+  }
+
+
+  getSceneOffset() {
+    return this.sceneOffset;
+  }
+
+  setSceneOffset(offset) {
+    // Prevent offset from going negative
+    this.sceneOffset = Math.max(0, offset);
+    this.updateAllLEDs();
+  }
+
+
+
+  incrementSceneOffset() {
+    // Increase offset by 1 only if possible (check if scenes exist below)
+    let maxSceneNumber = Math.max(...Object.keys(this.scenes).map(k=>parseInt(k,10)));
+    // If top row corresponds to scene sceneOffset+1, and bottom row to scene sceneOffset+8
+    // Check if we can scroll down further: (sceneOffset + 8 < maxSceneNumber)
+    if (this.sceneOffset < maxSceneNumber) {
+      this.sceneOffset++;
+      this.updateAllLEDs();
+    }
+  }
+
+  decrementSceneOffset() {
+    if (this.sceneOffset > 0) {
+      this.sceneOffset--;
+      this.updateAllLEDs();
+    }
   }
 
   // Scene and clip management methods
@@ -123,7 +155,7 @@ class StateManager extends EventEmitter {
     if (previousActiveRow !== null) {
       const sceneCode = this.scenes[previousActiveRow + 1];
       const modifiedClips = this.getModifiedClips(previousActiveRow);
-      this.ledManager.updateRowLEDs(previousActiveRow, sceneCode, modifiedClips, this.activeClips);
+      this.ledManager.updateRowLEDs(previousActiveRow, sceneCode, modifiedClips, this.activeClips, this.offset);
     }
   }
 
@@ -149,18 +181,18 @@ class StateManager extends EventEmitter {
     // Update LEDs for the activated clip row
     const updatedSceneCode = this.scenes[row + 1];
     const modifiedClips = this.getModifiedClips(row);
-    this.ledManager.updateRowLEDs(row, updatedSceneCode, modifiedClips, this.activeClips);
+    this.ledManager.updateRowLEDs(row, updatedSceneCode, modifiedClips, this.activeClips, this.offset);
 
     // If a different row was previously active on this track, update its LEDs
     if (previousActiveRow !== null && previousActiveRow !== row) {
       const prevSceneCode = this.scenes[previousActiveRow + 1];
       const prevModifiedClips = this.getModifiedClips(previousActiveRow);
-      this.ledManager.updateRowLEDs(previousActiveRow, prevSceneCode, prevModifiedClips, this.activeClips);
+      this.ledManager.updateRowLEDs(previousActiveRow, prevSceneCode, prevModifiedClips, this.activeClips, this.offset);
     }
   }
 
   launchScene(row) {
-    const sceneKey = row + 1;
+    const sceneKey = row + 1 + this.sceneOffset;
     const sceneCode = this.scenes[sceneKey];
     if (!sceneCode) {
       console.log(`No scene found for row ${sceneKey}`);
