@@ -4,6 +4,10 @@ class ControllerMapping {
     parseMessage(status, key, velocity) {
       // e.g. return { type: 'clipPress', row: 2, col: 3 } or null if irrelevant
     }
+
+    getUseCCForAutomap(){
+      return false
+    }
   
     // Given row/col, return the MIDI note or CC number for the LED
     getClipLEDAddress(row, col) {}

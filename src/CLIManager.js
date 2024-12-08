@@ -26,6 +26,11 @@ class CLIManager {
         type: 'number',
         description: 'MIDI output port number for the Launchpad',
       })
+      .option('mapping', {
+        alias: 'm',
+        type: 'string',
+        description: 'MIDI Controller map. Default: LP. Options: LP,TOSC.'
+      })
       .help()
       .argv;
 
@@ -66,6 +71,10 @@ class CLIManager {
 
   getOutputPort() {
     return this.argv['output-port'];
+  }
+
+  getMapping() {
+    return this.argv['mapping'];
   }
 }
 

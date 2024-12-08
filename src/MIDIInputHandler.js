@@ -9,6 +9,7 @@ class MIDIInputHandler {
   }
 
   handleRawMessage(message) {
+    console.log(message)
     const [status, key, velocity] = message;
     const event = this.mapping.parseMessage(status, key, velocity);
 

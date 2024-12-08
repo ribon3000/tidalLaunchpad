@@ -39,5 +39,13 @@ do
   -- scene 5
 
   do
+    hush
     d1 $ s "bd*5" # n 35
-    d2 $ struct (ascii "h a h a h a") $ sound "bd" # n 36
+    d2 $ id
+      -- $ slow 2 
+      $ stack [
+      struct (ascii "<h a [h a] [h,a]>") $ sound "bd" # n 36 # legato 0.5,
+      -- struct ("t") $ sound "bd" # n 36,
+      s ((<~) (4/16) $ distrib ["11 9",13,16,"<5 7>"] "bdd") # n 42 # legato 4,
+      s "bd(1,4,2)" # n 38
+      ]

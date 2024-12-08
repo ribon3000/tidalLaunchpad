@@ -18,6 +18,13 @@ class MIDIManager {
     console.log(`MIDI output port ${outputPort} opened: ${this.output.getPortName(outputPort)}`);
 
     this.input.on('message', (deltaTime, message) => {
+      const statusByte = message[0]; // The first byte is the status byte
+      const messageType = statusByte & 0xF0; // Extract the message type (high nibble)
+      const channel = statusByte & 0x0F; // Extract the channel (low nibble)
+    
+      console.log(`Message Type: 0x${messageType.toString(16)}`);
+      console.log(`Channel: ${channel + 1}`); // Add 1 to display as MIDI channel (1-16)
+      console.log(`Message Data: ${message}`);
       this.handleMessage(message);
     });
 

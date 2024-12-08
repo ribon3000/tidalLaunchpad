@@ -12,7 +12,8 @@ class LEDManager {
       const colorName = active ? 'active' : 'off';
       const address = this.mapping.getModifierLEDAddress(i);
       const colorVal = this.mapping.getLEDColor(colorName);
-      this.setLED(address, colorVal, true);
+      const messageType = this.mapping.getUseCCForAutomap()
+      this.setLED(address, colorVal, messageType);
     }
   }
 
@@ -21,7 +22,8 @@ class LEDManager {
       const colorName = i == activePage ? 'active' : 'off';
       const address = this.mapping.getPageLEDAddress(i);
       const colorVal = this.mapping.getLEDColor(colorName);
-      this.setLED(address, colorVal, true);
+      const messageType = this.mapping.getUseCCForAutomap()
+      this.setLED(address, colorVal, messageType);
     }
   }
 

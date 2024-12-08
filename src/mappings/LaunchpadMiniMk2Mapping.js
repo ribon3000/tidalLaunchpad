@@ -51,6 +51,12 @@ class LaunchpadMiniMk2Mapping extends ControllerMapping {
     {
       return this.pageButtons[index];
     }
+
+
+    getUseCCForAutomap(){
+      return true
+    }
+  
   
     getSceneLaunchLEDAddress(row) {
       // On Launchpad, scene launch buttons are col=8, so:

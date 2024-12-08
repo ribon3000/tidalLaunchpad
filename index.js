@@ -5,6 +5,7 @@ const StateManager = require('./src/StateManager');
 const LEDManager = require('./src/LEDManager');
 const MIDIInputHandler = require('./src/MIDIInputHandler.js');
 const LaunchpadMiniMk2Mapping = require('./src/mappings/LaunchpadMiniMk2Mapping'); // example path
+const TouchOSCLPMapping = require('./src/mappings/TouchOscLPMapping.js')
 
 const GeneratorProvider = require('./src/TidalCodeGen/GeneratorProvider.js')
 
@@ -12,7 +13,8 @@ const cli = new CLIManager();
 const midiManager = new MIDIManager(cli.getInputPort(), cli.getOutputPort());
 
 // Select a mapping based on some CLI argument or default
-const mapping = new LaunchpadMiniMk2Mapping();
+const mappings = {LP: new LaunchpadMiniMk2Mapping(), TOSC: new TouchOSCLPMapping()};
+const mapping = mappings[cli.getMapping()];
 
 const tidalBootFile = './BootTidal.hs';
 const tidalCodeFile = cli.getFilePath() ? cli.getFilePath() : './playback.hs';
