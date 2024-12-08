@@ -97,6 +97,9 @@ class StateManager extends EventEmitter {
     // Check if we can scroll down further: (sceneOffset + 8 < maxSceneNumber)
     if (this.sceneOffset < maxSceneNumber) {
       this.sceneOffset++;
+      for (let i = 0; i < this.activeClips.length; i++) {
+        this.activeClips[i]--;
+      }      console.log(this.activeClips)
       this.updateAllLEDs();
     }
   }
@@ -104,6 +107,10 @@ class StateManager extends EventEmitter {
   decrementSceneOffset() {
     if (this.sceneOffset > 0) {
       this.sceneOffset--;
+      for (let i = 0; i < this.activeClips.length; i++) {
+        this.activeClips[i]++;
+      }
+      console.log(this.activeClips)
       this.updateAllLEDs();
     }
   }
@@ -141,29 +148,24 @@ class StateManager extends EventEmitter {
     return previousActiveRow;
   }
 
-  deactivateClip(track, hush = false) {
-    const previousActiveRow = this.activeClips[track];
+  deactivateClip(track) {
     this.activeClips[track] = null;
     this.state.active_streams[`d${track + 1}`] = 'off';
 
     // Send the mute command to TidalCycles
     const clipNumber = track + 1;
     const muteCommand = `d${clipNumber} $ silence`;
-    if(!hush) this.tidalManager.sendCommand(muteCommand);
-
-    // Update LEDs: if there was a previously active row, update that row's LEDs
-    if (previousActiveRow !== null) {
-      const sceneCode = this.scenes[previousActiveRow + 1];
-      const modifiedClips = this.getModifiedClips(previousActiveRow);
-      this.ledManager.updateRowLEDs(previousActiveRow, sceneCode, modifiedClips, this.activeClips, this.offset);
-    }
+    this.tidalManager.sendCommand(muteCommand);
+    this.updateAllLEDs()
   }
 
   deactivateAllClips(){
     for(let i=0;i<8;i++){
-      this.deactivateClip(i,true)
+      this.activeClips[i] = null;
+      this.state.active_streams[`d${i + 1}`] = 'off';
     }
     this.tidalManager.sendCommand(`:{\nhush\n:}`)
+    this.updateAllLEDs()
   }
 
   getActiveClips() {
@@ -175,20 +177,9 @@ class StateManager extends EventEmitter {
     this.tidalManager.sendCommand(`:{\n${modifiedCode}\n:}`);
 
     this.clearModifiedClips(row, track);
-    const previousActiveRow = this.activeClips[track];
     this.setActiveClip(row, track);
 
-    // Update LEDs for the activated clip row
-    const updatedSceneCode = this.scenes[row + 1];
-    const modifiedClips = this.getModifiedClips(row);
-    this.ledManager.updateRowLEDs(row, updatedSceneCode, modifiedClips, this.activeClips, this.offset);
-
-    // If a different row was previously active on this track, update its LEDs
-    if (previousActiveRow !== null && previousActiveRow !== row) {
-      const prevSceneCode = this.scenes[previousActiveRow + 1];
-      const prevModifiedClips = this.getModifiedClips(previousActiveRow);
-      this.ledManager.updateRowLEDs(previousActiveRow, prevSceneCode, prevModifiedClips, this.activeClips, this.offset);
-    }
+    this.updateAllLEDs()
   }
 
   launchScene(row) {
