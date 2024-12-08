@@ -6,52 +6,49 @@ class LEDManager {
   }
 
   updateAutomapLEDs(modifierButtons) {
-    // modifierButtons is an object like {1: true/false, 2: true/false, etc.}
     for (let i = 1; i <= 4; i++) {
       const active = modifierButtons[i];
       const colorName = active ? 'active' : 'off';
       const address = this.mapping.getModifierLEDAddress(i);
       const colorVal = this.mapping.getLEDColor(colorName);
-      const messageType = this.mapping.getUseCCForAutomap()
-      this.setLED(address, colorVal, messageType);
+
+      const messageType = this.mapping.getUseCCForAutomap();
+      const channel = this.mapping.getModifierLEDChannel(i);
+
+      this.setLED(address, colorVal, messageType, channel);
     }
   }
+
 
   updatePageLEDs(activePage){
     for (let i = 0; i < 4; i++) {
       const colorName = i == activePage ? 'active' : 'off';
       const address = this.mapping.getPageLEDAddress(i);
       const colorVal = this.mapping.getLEDColor(colorName);
-      const messageType = this.mapping.getUseCCForAutomap()
-      this.setLED(address, colorVal, messageType);
+      const messageType = this.mapping.getUseCCForAutomap();
+      const channel = this.mapping.getPageLEDChannel(i);
+
+      this.setLED(address, colorVal, messageType, channel);
     }
   }
 
+
   updateRowLEDs(row, sceneCode, modifiedClips, activeClips, pendingTracks=[]) {
-    // sceneCode: string code for the scene
-    // modifiedClips: array of modified clip indexes for this row
-    // activeClips: array of activeClips indexed by track
-
     const clips = this.parseClips(sceneCode);
-
-    // The mapping defines how many clips per row (e.g., 8)
     const cols = this.mapping.getNumberOfColumns();
-    // Typically, you have 8 clips plus one scene launch column; 
-    // adjust as needed based on your mapping if scene launch is in that row.
-    // If the last column is for scene launch, you might do cols-1 for actual clips.
-    const clipCount = 8; // assuming 8 clips and 1 scene column.
+    const clipCount = 8;
 
     for (let col = 0; col < clipCount; col++) {
       const address = this.mapping.getClipLEDAddress(row, col);
+      const channel = this.mapping.getClipLEDChannel(row, col);
+
       let colorName;
       if (clips.hasOwnProperty(`d${col + 1}`)) {
         if (modifiedClips.includes(col)) {
           colorName = 'modified';
         } else if (activeClips[col] === row) {
-          // If this active clip track is in pendingTracks, override color
           if (pendingTracks.includes(col)) {
-            // pendingChanges color
-            colorName = 'modified'; 
+            colorName = 'modified';
           } else {
             colorName = 'active';
           }
@@ -61,21 +58,19 @@ class LEDManager {
       } else {
         colorName = 'off';
       }
+
       const colorVal = this.mapping.getLEDColor(colorName);
-      this.setLED(address, colorVal);
+      this.setLED(address, colorVal, false, channel);
     }
 
-    // If the mapping includes a scene launch column, update that LED as well
     if (cols > 8) {
       const sceneLaunchAddress = this.mapping.getSceneLaunchLEDAddress(row);
-      // Decide what color scene launch LED should have. 
-      // For example, "on" if the scene is defined, "off" otherwise:
+      const sceneLaunchChannel = this.mapping.getSceneLaunchLEDChannel(row);
       const sceneDefined = Object.keys(clips).length > 0;
       const sceneColorVal = this.mapping.getLEDColor(sceneDefined ? 'on' : 'off');
-      this.setLED(sceneLaunchAddress, sceneColorVal);
+      this.setLED(sceneLaunchAddress, sceneColorVal, false, sceneLaunchChannel);
     }
   }
-
   updateAllLEDs(scenes, activeClips, modifiedClipsMap, modifierButtons, activePage, pendingChanges) {
     this.clearLEDs();
     if(activePage == 0){
@@ -121,8 +116,11 @@ class LEDManager {
   }
 
   // Set LED state for a specific button
-  setLED(note, color, sendCC = false) {
-    this.midiManager.sendMessage([sendCC ? 176 : 144, note, color]);
+  setLED(note, color, sendCC = false, channel = 0) {
+    // Note on (0x90) + channel, or CC (0xB0) + channel
+    const base = sendCC ? 0xB0 : 0x90;
+    const status = base + channel;
+    this.midiManager.sendMessage([status, note, color]);
   }
 
   // Clear all LEDs

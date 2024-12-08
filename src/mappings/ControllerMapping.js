@@ -8,6 +8,12 @@ class ControllerMapping {
     getUseCCForAutomap(){
       return false
     }
+
+    getClipLEDChannel(row, col) { return 0; }            // Default channel: 0
+    getModifierLEDChannel(index) { return 0; }           // Default channel: 0
+    getSceneLaunchLEDChannel(row) { return 0; }          // Default channel: 0
+    getPageLEDChannel(index) { return 0; }               // Default channel: 0
+
   
     // Given row/col, return the MIDI note or CC number for the LED
     getClipLEDAddress(row, col) {}

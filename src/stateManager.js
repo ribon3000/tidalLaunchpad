@@ -109,7 +109,7 @@ class StateManager extends EventEmitter {
     return previousActiveRow;
   }
 
-  deactivateClip(track) {
+  deactivateClip(track, hush = false) {
     const previousActiveRow = this.activeClips[track];
     this.activeClips[track] = null;
     this.state.active_streams[`d${track + 1}`] = 'off';
@@ -117,7 +117,7 @@ class StateManager extends EventEmitter {
     // Send the mute command to TidalCycles
     const clipNumber = track + 1;
     const muteCommand = `d${clipNumber} $ silence`;
-    this.tidalManager.sendCommand(muteCommand);
+    if(!hush) this.tidalManager.sendCommand(muteCommand);
 
     // Update LEDs: if there was a previously active row, update that row's LEDs
     if (previousActiveRow !== null) {
@@ -127,10 +127,11 @@ class StateManager extends EventEmitter {
     }
   }
 
-  muteAllClips(){
-    for(let i=0;i<8;i++) {
-      this.deactivateClip(i);
+  deactivateAllClips(){
+    for(let i=0;i<8;i++){
+      this.deactivateClip(i,true)
     }
+    this.tidalManager.sendCommand(`:{\nhush\n:}`)
   }
 
   getActiveClips() {
@@ -163,6 +164,7 @@ class StateManager extends EventEmitter {
     const sceneCode = this.scenes[sceneKey];
     if (!sceneCode) {
       console.log(`No scene found for row ${sceneKey}`);
+      this.deactivateAllClips()
       return;
     }
 
