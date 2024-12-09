@@ -540,22 +540,59 @@ insertSceneAt(sceneNum) {
 }
 
 clearScene(sceneNum) {
-  // Remove all clip lines from the scene, leaving just the scene header
-  // or you could remove the entire scene block. The user story suggests clearing content,
-  // so we’ll keep the scene header but no clips.
-
   let updatedScenes = { ...this.scenes };
+
   if (!updatedScenes[sceneNum]) {
     console.log(`No scene ${sceneNum} to clear.`);
     return;
   }
 
-  updatedScenes[sceneNum] = `-- scene ${sceneNum}\ndo\n  hush`; // empty content
+  const sceneContent = updatedScenes[sceneNum].trim().split('\n');
+  // Minimal empty scene format:
+  // Line 0: -- scene X
+  // Line 1: do
+  // Line 2: two spaces + hush
 
+  // Check if the scene is the minimal empty scene
+  const isMinimalEmpty = (
+    sceneContent.length === 2 &&
+    sceneContent[0] === 'do' &&
+    sceneContent[1].trim() === 'hush'
+  );
+
+  // Check if scene has no clips and is currently empty or only hush
+  // If scene is more than these 3 lines or different, it’s not minimal empty.
+  if (isMinimalEmpty) {
+    console.log('DELETING SCENE')
+    // The scene is already minimal empty, so remove it and shift subsequent scenes up
+    delete updatedScenes[sceneNum];
+
+    const allSceneNums = Object.keys(updatedScenes)
+      .map(n => parseInt(n,10))
+      .sort((a,b)=>a-b);
+
+    for (let i = 0; i < allSceneNums.length; i++) {
+      const oldNum = allSceneNums[i];
+      if (oldNum > sceneNum) {
+        updatedScenes[oldNum - 1] = updatedScenes[oldNum];
+        delete updatedScenes[oldNum];
+      }
+    }
+
+    this.writeFullSceneSet(updatedScenes);
+    this.reloadFile(this.filePath);
+    this.updateAllLEDs();
+    return;
+  }
+
+  // If we reach here, it means the scene isn't minimal empty yet.
+  // Clear it by reverting it to the minimal empty form:
+  updatedScenes[sceneNum] = `-- scene ${sceneNum}\ndo\n  hush`;
   this.writeFullSceneSet(updatedScenes);
   this.reloadFile(this.filePath);
   this.updateAllLEDs();
 }
+
 
 clearClip(row, col) {
   const sceneNum = row + 1 + this.sceneOffset;
