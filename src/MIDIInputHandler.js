@@ -34,22 +34,28 @@ class MIDIInputHandler {
           this.stateManager.scrollUp()
           this.currentChord = []
         },
-        'write+sceneLaunch': (events) => {
+        'writePress':(event)=>{
+          //do nothing - but keep the event in the buffer since it's the start of a chord
+        },
+        'writePress+sceneLaunch': (events) => {
           // events[0] should be 'write', events[1] is 'sceneLaunch'
-          const sceneRow = events[1].row;
-          const sceneNum = sceneRow + 1 + this.stateManager.getSceneOffset();
-          this.stateManager.writeAllActiveClipsToScene(sceneNum);
+          console.log('this would write a new scene into scene '+events[1].row)
+          // const sceneRow = events[1].row;
+          // const sceneNum = sceneRow + 1 + this.stateManager.getSceneOffset();
+          // this.stateManager.writeAllActiveClipsToScene(sceneNum);
           this.currentChord = [];
         },
-        'write+clipPress': (events) => {
+        'writePress+clipPress': (events) => {
           // events[0] is 'write', events[1] is 'clipPress'
-          const row = events[1].row;
-          const col = events[1].col;
-          this.stateManager.writeActiveClipToSlot(row, col);
+          console.log('this would write a new clip into clip '+events[1].row+' '+events[1].col)
+          // const row = events[1].row;
+          // const col = events[1].col;
+          // this.stateManager.writeActiveClipToSlot(row, col);
           this.currentChord = [];
         },
-        'write+clear': (events) => {
-          this.stateManager.insertEmptySceneBelowLowestActive();
+        'writePress+clearPress': (events) => {
+          console.log('this would insert an empty scene below the lowest active clip')
+          // this.stateManager.insertEmptySceneBelowLowestActive();
           this.currentChord = [];
         },
         'clear+sceneLaunch': (events) => {

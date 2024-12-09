@@ -401,6 +401,260 @@ writeSceneToFile(sceneKey, updatedSceneCode) {
     console.log(`File updated with new scenes.`);
 
   }
+
+  // Writes all currently active (or pending) clips into a given sceneNum.
+writeAllActiveClipsToScene(sceneNum) {
+  // Ensure sceneNum is valid, if not create it.
+  let updatedScenes = { ...this.scenes };
+  if (!updatedScenes[sceneNum]) {
+    // Create a new empty scene
+    updatedScenes[sceneNum] = '';
+  }
+
+  // Start building the scene code:
+  // We'll gather all active clips. For each track:
+  // - If pendingChanges exist for that track, use newClipCode.
+  // - Else, if active clip exists, get its code from the original scene.
+  
+  let newSceneLines = [`-- scene ${sceneNum}`];
+
+  for (let track = 0; track < 8; track++) {
+    const row = this.activeClips[track];
+    if (row === null) {
+      // No clip on this track, skip
+      continue;
+    }
+
+    const originalSceneNum = row + 1 + this.sceneOffset;
+    const originalSceneCode = this.scenes[originalSceneNum];
+    if (!originalSceneCode) continue; // no original code, skip
+
+    const clipKey = `d${track + 1}`;
+
+    if (this.pendingChanges[track]) {
+      // Use pending changes
+      const { newClipCode } = this.pendingChanges[track];
+      // newClipCode is something like '  dX $ pattern'
+      newSceneLines.push(newClipCode);
+    } else {
+      // Extract the currently playing clip line from the original scene
+      const clips = this.parseClips(originalSceneCode);
+      if (clips[clipKey]) {
+        newSceneLines.push(clips[clipKey]);
+      } else {
+        // If no clip line found, skip
+      }
+    }
+  }
+
+  const finalSceneCode = newSceneLines.join('\n');
+  updatedScenes[sceneNum] = finalSceneCode;
+
+  // Write back to file
+  this.writeFullSceneSet(updatedScenes);
+
+  // Clear pending changes for all tracks that were written
+  for (let track = 0; track < 8; track++) {
+    if (this.pendingChanges[track]) {
+      delete this.pendingChanges[track];
+    }
+  }
+
+  this.reloadFile(this.filePath); 
+  this.updateAllLEDs();
+}
+
+
+// Writes the currently active or pending clip for a specific track into a specified clip slot (row,col).
+// This effectively replaces the clip line in the target scene with the current clip's code.
+writeActiveClipToSlot(row, col) {
+  const sceneNum = row + 1 + this.sceneOffset;
+  const track = col; // track index = col
+  const clipKey = `d${track + 1}`;
+
+  const updatedScenes = { ...this.scenes };
+  let sceneCode = updatedScenes[sceneNum] || (`-- scene ${sceneNum}`);
+
+  let newClipCode;
+
+  if (this.pendingChanges[track]) {
+    // Use pending changes
+    newClipCode = this.pendingChanges[track].newClipCode;
+    delete this.pendingChanges[track]; // no longer pending
+  } else {
+    // Get the currently playing clip line from its original scene
+    const activeRow = this.activeClips[track];
+    if (activeRow === null) {
+      // No active clip on this track, do nothing or write silence?
+      console.log(`No active clip on track ${track+1}`);
+      return;
+    }
+    const originalSceneNum = activeRow + 1 + this.sceneOffset;
+    const originalSceneCode = this.scenes[originalSceneNum];
+    const clips = this.parseClips(originalSceneCode);
+    if (!clips[clipKey]) {
+      // No original clip found, maybe write silence or skip
+      console.log(`No original clip found in scene ${originalSceneNum} track ${track+1}`);
+      return;
+    }
+    const originalClipLine = clips[clipKey];
+    newClipCode = originalClipLine;
+  }
+
+  // Insert/Replace the clip line in the target scene
+  sceneCode = this.applyNewClipToScene(sceneCode, clipKey, newClipCode);
+  updatedScenes[sceneNum] = sceneCode;
+  this.writeFullSceneSet(updatedScenes);
+  this.reloadFile(this.filePath);
+  this.updateAllLEDs();
+}
+
+
+
+insertEmptySceneBelowLowestActive() {
+  // Find the lowest active scene number
+  const activeRows = this.activeClips.filter(r => r !== null);
+  if (activeRows.length === 0) {
+    // No active clips, let's insert at the bottom of existing scenes
+    const maxSceneNum = Math.max(...Object.keys(this.scenes).map(n=>parseInt(n,10)),1);
+    this.insertSceneAt(maxSceneNum+1);
+    return;
+  }
+
+  const lowestRow = Math.max(...activeRows);
+  const lowestSceneNum = lowestRow + 1 + this.sceneOffset;
+
+  // Insert a new empty scene after lowestSceneNum
+  this.insertSceneAt(lowestSceneNum + 1);
+}
+
+// Helper method to insert an empty scene at a given sceneNum position
+insertSceneAt(sceneNum) {
+  let updatedScenes = { ...this.scenes };
+
+  // We must shift all scenes >= sceneNum up by one
+  const allSceneNums = Object.keys(updatedScenes).map(n=>parseInt(n,10)).sort((a,b)=>a-b);
+  for (let i = allSceneNums.length -1; i >= 0; i--) {
+    const oldNum = allSceneNums[i];
+    if (oldNum >= sceneNum) {
+      // Move this scene down by one
+      updatedScenes[oldNum + 1] = updatedScenes[oldNum];
+      delete updatedScenes[oldNum];
+    }
+  }
+
+  // Insert the new empty scene
+  updatedScenes[sceneNum] = `-- scene ${sceneNum}\n`; // empty scene
+
+  this.writeFullSceneSet(updatedScenes);
+  this.reloadFile(this.filePath);
+  this.updateAllLEDs();
+}
+
+clearScene(sceneNum) {
+  // Remove all clip lines from the scene, leaving just the scene header
+  // or you could remove the entire scene block. The user story suggests clearing content,
+  // so we’ll keep the scene header but no clips.
+
+  let updatedScenes = { ...this.scenes };
+  if (!updatedScenes[sceneNum]) {
+    console.log(`No scene ${sceneNum} to clear.`);
+    return;
+  }
+
+  updatedScenes[sceneNum] = `-- scene ${sceneNum}\n`; // empty content
+
+  this.writeFullSceneSet(updatedScenes);
+  this.reloadFile(this.filePath);
+  this.updateAllLEDs();
+}
+
+clearClip(row, col) {
+  const sceneNum = row + 1 + this.sceneOffset;
+  const updatedScenes = { ...this.scenes };
+  let sceneCode = updatedScenes[sceneNum];
+  if (!sceneCode) {
+    console.log(`No scene ${sceneNum} found.`);
+    return;
+  }
+
+  const track = col;
+  const clipKey = `d${track + 1}`;
+
+  // To clear a clip, we remove its line(s).
+  // applyNewClipToScene expects to replace the clip with something.
+  // If we want to remove it entirely, we can just replace it with nothing.
+
+  // Find the clip in sceneCode and remove it
+  const lines = sceneCode.split('\n');
+  const clipStartRegex = new RegExp(`^\\s*(${clipKey})\\s*\\$`);
+  const anotherClipRegex = /^\s*(d[1-8])\s*$/;
+  const sceneStartRegex = /^-- scene \d+/i;
+
+  let clipStartIndex = -1;
+  let clipEndIndex = -1;
+
+  for (let i=0; i<lines.length; i++){
+    if (clipStartRegex.test(lines[i])) {
+      clipStartIndex = i;
+      break;
+    }
+  }
+
+  if (clipStartIndex === -1) {
+    console.log(`Clip ${clipKey} not found in scene ${sceneNum}`);
+    return;
+  }
+
+  for (let j = clipStartIndex+1; j<lines.length; j++) {
+    const line = lines[j].trim();
+    if (line === '' || sceneStartRegex.test(line) || anotherClipRegex.test(line)) {
+      clipEndIndex = j-1;
+      break;
+    }
+  }
+
+  if (clipEndIndex === -1) {
+    clipEndIndex = lines.length - 1;
+  }
+
+  const beforeClip = lines.slice(0, clipStartIndex);
+  const afterClip = lines.slice(clipEndIndex+1);
+
+  const updatedLines = [...beforeClip, ...afterClip];
+  sceneCode = updatedLines.join('\n');
+  updatedScenes[sceneNum] = sceneCode;
+
+  this.writeFullSceneSet(updatedScenes);
+  this.reloadFile(this.filePath);
+  this.updateAllLEDs();
+}
+
+
+writeFullSceneSet(updatedScenes) {
+  let fileContent = '';
+
+  const sortedSceneNums = Object.keys(updatedScenes)
+    .map(k => parseInt(k,10))
+    .sort((a,b)=>a-b);
+
+  sortedSceneNums.forEach((key, index) => {
+    let sceneContent = (updatedScenes[key] || '').trim();
+    if (!sceneContent.startsWith('-- scene')) {
+      sceneContent = `-- scene ${key}\n${sceneContent}`;
+    }
+    fileContent += sceneContent;
+    if (index !== sortedSceneNums.length - 1) {
+      fileContent += '\n\n';
+    }
+  });
+
+  fs.writeFileSync(this.filePath, fileContent);
+  this.scenes = updatedScenes; // update internal state
+}
+
+
+
 }
 
 module.exports = StateManager;

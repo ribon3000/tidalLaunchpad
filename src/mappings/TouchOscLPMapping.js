@@ -67,7 +67,7 @@ class LaunchpadMiniMk2Mapping extends ControllerMapping {
   
     getSceneLaunchLEDAddress(row) {
       // On Launchpad, scene launch buttons are col=8, so:
-      return this.getClipLEDAddress(row, 8);
+      return this.sceneRow[row];
     }
   
     getLEDColor(colorName) {
