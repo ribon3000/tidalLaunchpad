@@ -3,7 +3,7 @@ repomix-output.txt
 *repomix*
 *.maxpat
 *.amxd
-parseOSC.js
+./parseOSC.js
 *.tosc
-repomix.config.json
-.repomixignore
+./repomix.config.json
+./.repomixignore
