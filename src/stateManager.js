@@ -403,73 +403,60 @@ writeSceneToFile(sceneKey, updatedSceneCode) {
   }
 
   // Writes all currently active (or pending) clips into a given sceneNum.
-writeAllActiveClipsToScene(sceneNum) {
-  // Ensure sceneNum is valid, if not create it.
-  let updatedScenes = { ...this.scenes };
-  if (!updatedScenes[sceneNum]) {
-    // Create a new empty scene
-    updatedScenes[sceneNum] = '';
-  }
-
-  // Start building the scene code:
-  // We'll gather all active clips. For each track:
-  // - If pendingChanges exist for that track, use newClipCode.
-  // - Else, if active clip exists, get its code from the original scene.
+  writeAllActiveClipsToScene(sceneNum) {
+    let updatedScenes = { ...this.scenes };
+    if (!updatedScenes[sceneNum]) {
+      updatedScenes[sceneNum] = '';
+    }
   
-  let newSceneLines = [`-- scene ${sceneNum}`];
-
-  for (let track = 0; track < 8; track++) {
-    const row = this.activeClips[track];
-    if (row === null) {
-      // No clip on this track, skip
-      continue;
-    }
-
-    const originalSceneNum = row + 1 + this.sceneOffset;
-    const originalSceneCode = this.scenes[originalSceneNum];
-    if (!originalSceneCode) continue; // no original code, skip
-
-    const clipKey = `d${track + 1}`;
-
-    if (this.pendingChanges[track]) {
-      // Use pending changes
-      const { newClipCode } = this.pendingChanges[track];
-      // newClipCode is something like '  dX $ pattern'
-      newSceneLines.push(newClipCode);
-    } else {
-      // Extract the currently playing clip line from the original scene
-      const clips = this.parseClips(originalSceneCode);
-      if (clips[clipKey]) {
-        newSceneLines.push(clips[clipKey]);
+    let newSceneLines = [`-- scene ${sceneNum}\ndo\n  hush`];
+  
+    for (let track = 0; track < 8; track++) {
+      const row = this.activeClips[track];
+      if (row === null) continue;
+  
+      const originalSceneNum = row + 1 + this.sceneOffset;
+      const originalSceneCode = this.scenes[originalSceneNum];
+      if (!originalSceneCode) continue; 
+  
+      const clipKey = `d${track + 1}`;
+      let clipToWrite;
+  
+      if (this.pendingChanges[track]) {
+        // Use pending changes
+        const { newClipCode } = this.pendingChanges[track];
+        clipToWrite = newClipCode;
+        delete this.pendingChanges[track]; // no longer pending after we write
       } else {
-        // If no clip line found, skip
+        // Retrieve the currently playing clip line from original scene using TidalParser
+        const { found, lines } = TidalParser.getClipBlock(originalSceneCode, clipKey);
+        if (found) {
+          // lines represent the entire clip block
+          clipToWrite = lines.join('\n');
+        } else {
+          // No clip found, skip
+          continue;
+        }
       }
+  
+      if (clipToWrite) newSceneLines.push(clipToWrite);
     }
+  
+    const finalSceneCode = newSceneLines.join('\n');
+    updatedScenes[sceneNum] = finalSceneCode;
+  
+    this.writeFullSceneSet(updatedScenes);
+    this.reloadFile(this.filePath);
+    this.updateAllLEDs();
   }
-
-  const finalSceneCode = newSceneLines.join('\n');
-  updatedScenes[sceneNum] = finalSceneCode;
-
-  // Write back to file
-  this.writeFullSceneSet(updatedScenes);
-
-  // Clear pending changes for all tracks that were written
-  for (let track = 0; track < 8; track++) {
-    if (this.pendingChanges[track]) {
-      delete this.pendingChanges[track];
-    }
-  }
-
-  this.reloadFile(this.filePath); 
-  this.updateAllLEDs();
-}
+  
 
 
 // Writes the currently active or pending clip for a specific track into a specified clip slot (row,col).
 // This effectively replaces the clip line in the target scene with the current clip's code.
 writeActiveClipToSlot(row, col) {
   const sceneNum = row + 1 + this.sceneOffset;
-  const track = col; // track index = col
+  const track = col;
   const clipKey = `d${track + 1}`;
 
   const updatedScenes = { ...this.scenes };
@@ -485,20 +472,20 @@ writeActiveClipToSlot(row, col) {
     // Get the currently playing clip line from its original scene
     const activeRow = this.activeClips[track];
     if (activeRow === null) {
-      // No active clip on this track, do nothing or write silence?
       console.log(`No active clip on track ${track+1}`);
       return;
     }
+
     const originalSceneNum = activeRow + 1 + this.sceneOffset;
     const originalSceneCode = this.scenes[originalSceneNum];
-    const clips = this.parseClips(originalSceneCode);
-    if (!clips[clipKey]) {
-      // No original clip found, maybe write silence or skip
+    const { found, lines } = TidalParser.getClipBlock(originalSceneCode, clipKey);
+
+    if (!found) {
       console.log(`No original clip found in scene ${originalSceneNum} track ${track+1}`);
       return;
     }
-    const originalClipLine = clips[clipKey];
-    newClipCode = originalClipLine;
+
+    newClipCode = lines.join('\n');
   }
 
   // Insert/Replace the clip line in the target scene
@@ -508,6 +495,7 @@ writeActiveClipToSlot(row, col) {
   this.reloadFile(this.filePath);
   this.updateAllLEDs();
 }
+
 
 
 
@@ -544,7 +532,7 @@ insertSceneAt(sceneNum) {
   }
 
   // Insert the new empty scene
-  updatedScenes[sceneNum] = `-- scene ${sceneNum}\n`; // empty scene
+  updatedScenes[sceneNum] = `-- scene ${sceneNum}\ndo\n  hush`; // empty scene
 
   this.writeFullSceneSet(updatedScenes);
   this.reloadFile(this.filePath);
@@ -562,7 +550,7 @@ clearScene(sceneNum) {
     return;
   }
 
-  updatedScenes[sceneNum] = `-- scene ${sceneNum}\n`; // empty content
+  updatedScenes[sceneNum] = `-- scene ${sceneNum}\ndo\n  hush`; // empty content
 
   this.writeFullSceneSet(updatedScenes);
   this.reloadFile(this.filePath);
@@ -581,45 +569,16 @@ clearClip(row, col) {
   const track = col;
   const clipKey = `d${track + 1}`;
 
-  // To clear a clip, we remove its line(s).
-  // applyNewClipToScene expects to replace the clip with something.
-  // If we want to remove it entirely, we can just replace it with nothing.
+  const { found, startIndex, endIndex } = TidalParser.getClipBlock(sceneCode, clipKey);
 
-  // Find the clip in sceneCode and remove it
-  const lines = sceneCode.split('\n');
-  const clipStartRegex = new RegExp(`^\\s*(${clipKey})\\s*\\$`);
-  const anotherClipRegex = /^\s*(d[1-8])\s*$/;
-  const sceneStartRegex = /^-- scene \d+/i;
-
-  let clipStartIndex = -1;
-  let clipEndIndex = -1;
-
-  for (let i=0; i<lines.length; i++){
-    if (clipStartRegex.test(lines[i])) {
-      clipStartIndex = i;
-      break;
-    }
-  }
-
-  if (clipStartIndex === -1) {
+  if (!found) {
     console.log(`Clip ${clipKey} not found in scene ${sceneNum}`);
     return;
   }
 
-  for (let j = clipStartIndex+1; j<lines.length; j++) {
-    const line = lines[j].trim();
-    if (line === '' || sceneStartRegex.test(line) || anotherClipRegex.test(line)) {
-      clipEndIndex = j-1;
-      break;
-    }
-  }
-
-  if (clipEndIndex === -1) {
-    clipEndIndex = lines.length - 1;
-  }
-
-  const beforeClip = lines.slice(0, clipStartIndex);
-  const afterClip = lines.slice(clipEndIndex+1);
+  const lines = sceneCode.split('\n');
+  const beforeClip = lines.slice(0, startIndex);
+  const afterClip = lines.slice(endIndex + 1);
 
   const updatedLines = [...beforeClip, ...afterClip];
   sceneCode = updatedLines.join('\n');

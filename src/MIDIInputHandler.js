@@ -38,36 +38,48 @@ class MIDIInputHandler {
           //do nothing - but keep the event in the buffer since it's the start of a chord
         },
         'writePress+sceneLaunch': (events) => {
-          // events[0] should be 'write', events[1] is 'sceneLaunch'
-          console.log('this would write a new scene into scene '+events[1].row)
-          // const sceneRow = events[1].row;
-          // const sceneNum = sceneRow + 1 + this.stateManager.getSceneOffset();
-          // this.stateManager.writeAllActiveClipsToScene(sceneNum);
+          // console.log('this would write a new scene into scene '+events[1].row)
+          const sceneRow = events[1].row;
+          const sceneNum = sceneRow + 1 + this.stateManager.getSceneOffset();
+          this.stateManager.writeAllActiveClipsToScene(sceneNum);
           this.currentChord = [];
         },
         'writePress+clipPress': (events) => {
           // events[0] is 'write', events[1] is 'clipPress'
-          console.log('this would write a new clip into clip '+events[1].row+' '+events[1].col)
-          // const row = events[1].row;
-          // const col = events[1].col;
-          // this.stateManager.writeActiveClipToSlot(row, col);
+          // console.log('this would write a new clip into clip '+events[1].row+' '+events[1].col)
+          const row = events[1].row;
+          const col = events[1].col;
+          this.stateManager.writeActiveClipToSlot(row, col);
           this.currentChord = [];
         },
         'writePress+clearPress': (events) => {
-          console.log('this would insert an empty scene below the lowest active clip')
-          // this.stateManager.insertEmptySceneBelowLowestActive();
+          // console.log('this would insert an empty scene below the lowest active clip')
+          this.stateManager.insertEmptySceneBelowLowestActive();
           this.currentChord = [];
         },
-        'clear+sceneLaunch': (events) => {
-          const sceneRow = events[1].row;
-          const sceneNum = sceneRow + 1 + this.stateManager.getSceneOffset();
-          this.stateManager.clearScene(sceneNum);
+        'clearPress':()=>{
+          //again, do nothing so that the chord continues
+        },
+        'clearPress+sceneLaunch':()=>{
+          //again, do nothing so that the chord continues
+        },
+        'clearPress+clipPress':()=>{
+          //again, do nothing so that the chord continues
+        },
+        'clearPress+sceneLaunch+sceneLaunch': (events) => {
+          if(events[1].row == events[2].row){
+            const sceneRow = events[1].row;
+            const sceneNum = sceneRow + 1 + this.stateManager.getSceneOffset();
+            this.stateManager.clearScene(sceneNum);
+          }
           this.currentChord = [];
         },
-        'clear+clipPress': (events) => {
-          const row = events[1].row;
-          const col = events[1].col;
-          this.stateManager.clearClip(row, col);
+        'clearPress+clipPress+clipPress': (events) => {
+          if(events[1].row == events[2].row && events[1].col == events[2].col){
+            const row = events[1].row;
+            const col = events[1].col;
+            this.stateManager.clearClip(row, col);
+          }
           this.currentChord = [];
         }
       },

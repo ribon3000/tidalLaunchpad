@@ -18,6 +18,10 @@ do
 -- scene 2
 do
   hush
+
+-- scene 3
+do
+  hush
   let val1 = pF "val1"
       val2 = pF "val2"
   d1 $ s "bd*4" # n 36
@@ -36,6 +40,10 @@ do
   d4 $ outside 8 (loopFirst) $ fast 1 $ struct ("t({11 11 9 5 7}%16,16,{0 0 -1}%8)") $ s "sdfhk" # n (43 + "{0 0 0 12 0 -12 0}%16" + "0 5 -2 7") # legato "{1 0.2 2 1 1 3 0.5}%16" # amp "{0.2 0.2 1 0.2 0.2}%4" # val1 "{0 1 0 0.25 0.5}%8" # val2 (segment 16 $ rand)
 
 -- scene 5
+do
+  hush
+
+-- scene 6
 do
     hush
     d1 $ s "bd*5" # n 35

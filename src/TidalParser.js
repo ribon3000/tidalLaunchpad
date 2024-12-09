@@ -135,6 +135,62 @@ class TidalParser {
   
     return modifiedLines.join('\n');
   }
+
+  static getClipBlock(sceneCode, clipKey) {
+    const lines = sceneCode.split('\n');
+
+    const clipStartRegex = new RegExp(`^\\s*(${clipKey})\\s*\\$`);
+    const anotherClipRegex = /^\s*(d[1-8])\s*\$/;
+    const sceneStartRegex = /^-- scene \d+/i;
+
+    let clipStartIndex = -1;
+    let clipEndIndex = -1;
+
+    // Find the start of the target clip
+    for (let i = 0; i < lines.length; i++) {
+      if (clipStartRegex.test(lines[i])) {
+        clipStartIndex = i;
+        break;
+      }
+    }
+
+    if (clipStartIndex === -1) {
+      // Clip not found
+      return { found: false, startIndex: -1, endIndex: -1, lines: [] };
+    }
+
+    // Starting from clipStartIndex+1, find the end of the clip
+    // The clip ends if we hit:
+    // - An empty line
+    // - Another clip line
+    // - Another scene line
+    for (let j = clipStartIndex + 1; j < lines.length; j++) {
+      const line = lines[j].trim();
+
+      if (
+        line === '' || 
+        sceneStartRegex.test(line) || 
+        anotherClipRegex.test(line)
+      ) {
+        clipEndIndex = j - 1;
+        break;
+      }
+    }
+
+    // If we never hit a boundary, the clip goes until the end of the file
+    if (clipEndIndex === -1) {
+      clipEndIndex = lines.length - 1;
+    }
+
+    const clipLines = lines.slice(clipStartIndex, clipEndIndex + 1);
+
+    return {
+      found: true,
+      startIndex: clipStartIndex,
+      endIndex: clipEndIndex,
+      lines: clipLines
+    };
+  }
 }
 
 module.exports = TidalParser;
