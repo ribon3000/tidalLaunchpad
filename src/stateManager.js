@@ -90,7 +90,7 @@ class StateManager extends EventEmitter {
 
 
 
-  incrementSceneOffset() {
+  scrollDown() {
     // Increase offset by 1 only if possible (check if scenes exist below)
     let maxSceneNumber = Math.max(...Object.keys(this.scenes).map(k=>parseInt(k,10)));
     // If top row corresponds to scene sceneOffset+1, and bottom row to scene sceneOffset+8
@@ -99,18 +99,17 @@ class StateManager extends EventEmitter {
       this.sceneOffset++;
       for (let i = 0; i < this.activeClips.length; i++) {
         this.activeClips[i]--;
-      }      console.log(this.activeClips)
+      }
       this.updateAllLEDs();
     }
   }
 
-  decrementSceneOffset() {
+  scrollUp() {
     if (this.sceneOffset > 0) {
       this.sceneOffset--;
       for (let i = 0; i < this.activeClips.length; i++) {
         this.activeClips[i]++;
       }
-      console.log(this.activeClips)
       this.updateAllLEDs();
     }
   }
@@ -183,6 +182,7 @@ class StateManager extends EventEmitter {
   }
 
   launchScene(row) {
+    console.log('launching scene for '+(row+1+this.sceneOffset))
     const sceneKey = row + 1 + this.sceneOffset;
     const sceneCode = this.scenes[sceneKey];
     if (!sceneCode) {
@@ -199,7 +199,6 @@ class StateManager extends EventEmitter {
     const clips = TidalParser.parseClips(sceneCode);
 
     // Save the current state of active clips
-    const previousActiveClips = [...this.activeClips];
     this.activeClips = Array(8).fill(null);
 
     Object.keys(clips).forEach((clipKey) => {
@@ -253,7 +252,7 @@ generateCodeForTrack(trackIndex, generatorKey) {
     return;
   }
 
-  const sceneKey = row + 1;
+  const sceneKey = row + 1 + this.sceneOffset;
   const sceneCode = this.scenes[sceneKey];
   if (!sceneCode) {
     console.log(`No scene found for active clip on track ${trackIndex+1}`);
@@ -292,7 +291,6 @@ generateCodeForTrack(trackIndex, generatorKey) {
     newClipCode
   };
 
-  // Since we've updated what's playing on Tidal, also update internal state to show that the active clip now corresponds to generated code
   // Mark this clip as "pending" somehow, or just rely on LEDs later
   this.updateAllLEDs();
 }

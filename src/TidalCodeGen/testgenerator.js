@@ -9,7 +9,5 @@ console.log(JSON.stringify(acid))
 
 
 for (let i = 0; i < 10; i++) {
-  // console.log(generator.generatePattern())
-  // console.log(acid.generateEuclidTrigPattern() + ' ' + acid.generateOctavePattern())
   console.log(acid.generatePattern())
 }

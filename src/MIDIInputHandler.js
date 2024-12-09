@@ -5,54 +5,134 @@ class MIDIInputHandler {
     this.stateManager = stateManager;
     this.mapping = mapping;
 
+    // Store currently pressed keys
+    this.currentChord = [];
+
+    this.actionMap = {
+      0: { // Clip Matrix Page
+        'clipPress': (events) => {
+          const e = events[0];
+          this.handleClipPress(e.row, e.col);
+          this.currentChord = [];
+        },
+        'sceneLaunch': (events) => {
+          const e = events[0];
+          this.stateManager.launchScene(e.row);
+          this.currentChord = [];
+        },
+        'pageButtonPress':(events)=> {
+          const e = events[0]
+          console.log('switching page to: '+e.key)
+          this.stateManager.switchPage(e.key)
+          this.currentChord = [];
+        },
+        'scrollDownPress':()=>{
+          this.stateManager.scrollDown()
+          this.currentChord = []
+        },
+        'scrollUpPress':()=>{
+          this.stateManager.scrollUp()
+          this.currentChord = []
+        },
+        'write+sceneLaunch': (events) => {
+          // events[0] should be 'write', events[1] is 'sceneLaunch'
+          const sceneRow = events[1].row;
+          const sceneNum = sceneRow + 1 + this.stateManager.getSceneOffset();
+          this.stateManager.writeAllActiveClipsToScene(sceneNum);
+          this.currentChord = [];
+        },
+        'write+clipPress': (events) => {
+          // events[0] is 'write', events[1] is 'clipPress'
+          const row = events[1].row;
+          const col = events[1].col;
+          this.stateManager.writeActiveClipToSlot(row, col);
+          this.currentChord = [];
+        },
+        'write+clear': (events) => {
+          this.stateManager.insertEmptySceneBelowLowestActive();
+          this.currentChord = [];
+        },
+        'clear+sceneLaunch': (events) => {
+          const sceneRow = events[1].row;
+          const sceneNum = sceneRow + 1 + this.stateManager.getSceneOffset();
+          this.stateManager.clearScene(sceneNum);
+          this.currentChord = [];
+        },
+        'clear+clipPress': (events) => {
+          const row = events[1].row;
+          const col = events[1].col;
+          this.stateManager.clearClip(row, col);
+          this.currentChord = [];
+        }
+      },
+      1: {
+        'pageButtonPress':(events)=> {
+          const e = events[0]
+          console.log('switching page to: '+e.key)
+          this.stateManager.switchPage(e.key)
+          this.currentChord = [];
+        },
+        // Page 1 actions...
+      },
+      2: {
+        'pageButtonPress':(events)=> {
+          const e = events[0]
+          console.log('switching page to: '+e.key)
+          this.stateManager.switchPage(e.key)
+          this.currentChord = [];
+        },
+      },
+      3: {
+        'pageButtonPress':(events)=> {
+          const e = events[0]
+          console.log('switching page to: '+e.key)
+          this.stateManager.switchPage(e.key)
+          this.currentChord = [];
+        },
+      }
+      // etc...
+    };
+
+
     midiManager.addListener(this.handleRawMessage.bind(this));
   }
 
+
   handleRawMessage(data) {
-    // data is now {status, key, velocity, channel}
     const { status, key, velocity, channel } = data;
     const event = this.mapping.parseMessage(status, key, velocity, channel);
-
     if (!event) return;
+  
+    this.currentChord.push(event);
+    this.checkForChordAction();
+  }
 
-    switch (event.type) {
-      case 'scrollUp':
-        if (this.stateManager.getCurrentPage() === 0) {
-          this.stateManager.decrementSceneOffset();
-        }
-        break;
-      case 'scrollDown':
-        if (this.stateManager.getCurrentPage() === 0) {
-          this.stateManager.incrementSceneOffset();
-        }
-        break;
-      case 'modifierPress':
-        this.stateManager.setModifierButtonState(event.index, event.active);
-        break;
-      case 'clipPress':
-        if (this.stateManager.getCurrentPage() === 0) {
-          this.handleClipPress(event.row, event.col);
-        } else if (this.stateManager.getCurrentPage() === 1) {
-          console.log('Page 2 clip press: generate code for track 1 using acidBasslineGenerator');
-          this.stateManager.generateCodeForTrack(0, 'acidBasslineGenerator');
-        } else {
-          console.log('Other page action...');
-        }
-        break;
-      case 'sceneLaunch':
-        if(this.stateManager.getCurrentPage() == 0){
-          this.stateManager.launchScene(event.row);
-        } else {
-          console.log('got scene launch button press: '+JSON.stringify(event));
-        }
-        break;
-      case 'pageButton':
-        this.stateManager.switchPage(event.key);
-        break;
-      default:
-        console.log(`Unknown event type: ${event.type}`);
-        break;
+  checkForChordAction() {
+    const page = this.stateManager.getCurrentPage();
+    const mapForPage = this.actionMap[page] || {};
+
+    // Create pattern from currentChord
+    // Just join the event.type fields with '+'
+    const pattern = this.currentChord.map(e => e.type).join('+');
+
+    console.log(`pattern: ${pattern}`)
+
+    // Check exact match
+    if (mapForPage[pattern]) {
+      mapForPage[pattern](this.currentChord);
+      return;
     }
+
+    // If no multi-event pattern matched, check if single-event pattern matches
+    if (this.currentChord.length === 1) {
+      const singlePattern = this.currentChord[0].type;
+      if (mapForPage[singlePattern]) {
+        mapForPage[singlePattern](this.currentChord);
+      }
+    }
+
+    // If still no match, clear chord.
+    this.currentChord = [];
   }
 
   handleClipPress(row, col) {
